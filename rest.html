@@ -48,9 +48,9 @@
   <img id="poster" src="rest-bg.png" alt="">
   <div class="shade"></div>
   <div class="content">
-    <div class="big">休息一下</div>
-    <div class="tip">请离开屏幕，望向 6 米以外的远处 👀<br>多眨眼 · 伸展肩颈 · 喝口水</div>
-    <div class="count" id="count">休息倒计时<span class="sec" id="sec">20</span>秒</div>
+    <div class="big" id="big">休息一下</div>
+    <div class="tip" id="tip">请离开屏幕，望向 6 米以外的远处 👀<br>多眨眼 · 伸展肩颈 · 喝口水</div>
+    <div class="count" id="count"><span id="countLabel">休息倒计时</span><span class="sec" id="sec">20</span><span id="unitLabel">秒</span></div>
     <div class="done" id="done">✨ 休息完成，马上回到工作</div>
   </div>
 
@@ -58,6 +58,37 @@
 (() => {
   const q = new URLSearchParams(location.search);
   const breakSec = parseInt(q.get('break') || '20', 10);
+  const lang = q.get('lang') === 'en' ? 'en' : 'zh';
+
+  const T = {
+    zh: {
+      big: '休息一下',
+      tip: '请离开屏幕，望向 6 米以外的远处 👀<br>多眨眼 · 伸展肩颈 · 喝口水',
+      countLabel: '休息倒计时', unit: '秒',
+      done: '✨ 休息完成，马上回到工作',
+      voice: 'zh-CN',
+      speakRest: '休息一下，请离开屏幕，望向远处放松眼睛',
+      speakMid: '再坚持一下，多眨眨眼',
+      speakDone: '休息完成，欢迎回来',
+    },
+    en: {
+      big: 'Take a Break',
+      tip: 'Look away from the screen at something 6 meters away 👀<br>Blink more · Stretch your neck and shoulders · Take a sip of water',
+      countLabel: 'Break ends in', unit: 's',
+      done: '✨ Break finished — back to work',
+      voice: 'en-US',
+      speakRest: 'Time for a break. Please look away from the screen and relax your eyes.',
+      speakMid: 'Hang in there a little longer. Remember to blink.',
+      speakDone: 'Break finished. Welcome back.',
+    },
+  }[lang];
+
+  document.getElementById('big').textContent = T.big;
+  document.getElementById('tip').innerHTML = T.tip;
+  document.getElementById('countLabel').textContent = T.countLabel;
+  document.getElementById('unitLabel').textContent = T.unit;
+  document.getElementById('done').textContent = T.done;
+  document.title = T.big;
 
   // 随机选一段实拍绿植视频
   const videos = ['rest-aerial.mp4', 'rest-plant.mp4'];
@@ -68,13 +99,13 @@
   function speak(text) {
     try {
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'zh-CN'; u.rate = 0.95;
+      u.lang = T.voice; u.rate = 0.95;
       speechSynthesis.cancel();
       speechSynthesis.speak(u);
     } catch (e) {}
   }
 
-  speak('休息一下，请离开屏幕，望向远处放松眼睛');
+  speak(T.speakRest);
 
   let left = breakSec;
   const secEl = document.getElementById('sec');
@@ -85,12 +116,12 @@
   const timer = setInterval(() => {
     left--;
     secEl.textContent = Math.max(0, left);
-    if (left === Math.floor(breakSec / 2)) speak('再坚持一下，多眨眨眼');
+    if (left === Math.floor(breakSec / 2)) speak(T.speakMid);
     if (left <= 0) {
       clearInterval(timer);
       countEl.style.visibility = 'hidden';
       doneEl.classList.add('show');
-      speak('休息完成，欢迎回来');
+      speak(T.speakDone);
     }
   }, 1000);
 })();

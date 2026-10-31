@@ -10,6 +10,7 @@ An eye-protection reminder program: it runs silently in the background after boo
 3. After launch, a green dot icon appears in the system tray at the bottom right:
    - Take a break now: enter the break screen immediately (for testing)
    - Pause monitoring: pause / resume the timer
+   - Language / 语言: switch between Chinese and English with one click (the choice is remembered)
    - Exit EyeGuard: quit completely
 4. The break screen plays full-screen for 20 seconds; when the countdown ends it closes automatically and the timer restarts.
 5. Webcam video is processed only on this machine - no network, no saving, no uploading.
@@ -18,6 +19,7 @@ An eye-protection reminder program: it runs silently in the background after boo
 - interval_min: how long before a break (default 30 minutes; can be set to 10/20/45/60)
 - break_sec: length of a break in seconds (default 20)
 - use_camera: set to false to turn off the webcam and switch to pure timing mode
+- lang: interface and voice language, zh for Chinese, en for English (can also be switched from the tray menu)
 Save after editing, then exit and restart the program for changes to take effect.
 
 【NOTES】
