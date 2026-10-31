@@ -1,0 +1,5 @@
+{
+  "interval_min": 30,
+  "break_sec": 20,
+  "use_camera": true
+}
