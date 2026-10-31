@@ -6,14 +6,16 @@ An eye-protection reminder program: it runs silently in the background after boo
 
 【HOW TO USE】
 1. Auto-start at boot is already configured; it takes effect from the next boot.
-2. To try it right away: double-click EyeGuard.pyw to launch it.
-3. After launch, a green dot icon appears in the system tray at the bottom right:
+2. To try it right away: double-click "护眼管家.bat" on your desktop.
+   (Note: do not double-click EyeGuard.pyw directly - the system has no .pyw association, so nothing will happen)
+3. To reinstall / install for the first time: double-click "安装到本机.bat" in this folder, choose 1 (Chinese) or 2 (English) as prompted; auto-start is written automatically when it finishes.
+4. After launch, a green dot icon appears in the system tray at the bottom right:
    - Take a break now: enter the break screen immediately (for testing)
    - Pause monitoring: pause / resume the timer
    - Language / 语言: switch between Chinese and English with one click (the choice is remembered)
    - Exit EyeGuard: quit completely
-4. The break screen plays full-screen for 20 seconds; when the countdown ends it closes automatically and the timer restarts.
-5. Webcam video is processed only on this machine - no network, no saving, no uploading.
+5. The break screen plays full-screen for 20 seconds; when the countdown ends it closes automatically and the timer restarts.
+6. Webcam video is processed only on this machine - no network, no saving, no uploading.
 
 【SETTINGS】(open config.json with Notepad to edit)
 - interval_min: how long before a break (default 30 minutes; can be set to 10/20/45/60)

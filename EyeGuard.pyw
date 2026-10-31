@@ -116,8 +116,23 @@ class CameraMonitor(threading.Thread):
     def run(self):
         cap = None
         try:
-            cascade = cv2.CascadeClassifier(
-                cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+            cascade = None
+            candidates = [os.path.join(BASE, "haarcascade_frontalface_default.xml")]
+            try:
+                candidates.append(cv2.data.haarcascades +
+                                  "haarcascade_frontalface_default.xml")
+            except Exception:
+                pass
+            for path in candidates:
+                if path and os.path.exists(path):
+                    c = cv2.CascadeClassifier(path)
+                    if not c.empty():
+                        cascade = c
+                        logging.info("face model loaded: %s" % path)
+                        break
+            if cascade is None:
+                logging.warning("face model unavailable, fallback to pure timer")
+                return
             cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
