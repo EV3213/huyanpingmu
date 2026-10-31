@@ -24,6 +24,12 @@ An eye-protection reminder program: it runs silently in the background after boo
 - lang: interface and voice language, zh for Chinese, en for English (can also be switched from the tray menu)
 Save after editing, then exit and restart the program for changes to take effect.
 
+【VOICE】
+- The break reminder uses a pre-generated natural voice (Xiaoxiao, female), not the robotic built-in system voice.
+- The voice files are voice_*.mp3 in this folder; if you delete them it falls back to the system voice automatically.
+- To change the voice or the lines: edit VOICE / LINES at the top of make_voice.py, then run
+  python make_voice.py once while online to regenerate them.
+
 【NOTES】
 - If the break screen is covered by another window the first time it appears, that is normal (always-on-top takes effect automatically).
 - If the webcam is occupied or not connected, it automatically falls back to "pure timing mode".

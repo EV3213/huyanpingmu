@@ -48,7 +48,7 @@ I18N = {
         "pause": "暂停监控",
         "exit": "退出护眼管家",
         "language": "语言 / Language：中文",
-        "speak_rest": "休息一下，请离开屏幕，望向远处放松眼睛",
+        "speak_rest": "休息一下，离开屏幕，看看远处，让眼睛放松一下吧",
         "speak_done": "休息完成，欢迎回来",
     },
     "en": {
@@ -91,10 +91,13 @@ def find_browser():
 
 
 def sapi_speak(text):
-    """备用语音：Windows SAPI（浏览器语音不可用时兜底）"""
+    """备用语音：Windows SAPI（浏览器语音不可用时兜底，语气放缓）"""
     try:
         cmd = ("Add-Type -AssemblyName System.Speech; "
                "$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+               "$s.Rate = -1; $s.Volume = 95; "
+               "foreach ($n in @('Microsoft Xiaoxiao', 'Microsoft Huihui', 'Microsoft Yaoyao')) { "
+               "  try { $s.SelectVoice($n); break } catch {} }; "
                "$s.Speak('{}');".format(text))
         subprocess.Popen(
             ["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", cmd],

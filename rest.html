@@ -67,8 +67,8 @@
       countLabel: '休息倒计时', unit: '秒',
       done: '✨ 休息完成，马上回到工作',
       voice: 'zh-CN',
-      speakRest: '休息一下，请离开屏幕，望向远处放松眼睛',
-      speakMid: '再坚持一下，多眨眨眼',
+      speakRest: '休息一下，离开屏幕，看看远处，让眼睛放松一下吧',
+      speakMid: '再坚持一下，记得多眨眨眼',
       speakDone: '休息完成，欢迎回来',
     },
     en: {
@@ -96,16 +96,38 @@
   bg.src = videos[Math.floor(Math.random() * videos.length)];
   bg.play?.().catch(() => { document.getElementById('poster').style.display = 'block'; });
 
-  function speak(text) {
+  // 语音：优先播放预生成的神经语音（自然、不机械）；没有文件则回退系统语音
+  function speakFallback(key) {
     try {
+      const text = { rest: T.speakRest, mid: T.speakMid, done: T.speakDone }[key];
       const u = new SpeechSynthesisUtterance(text);
-      u.lang = T.voice; u.rate = 0.95;
+      u.lang = T.voice; u.rate = 0.92; u.pitch = 1.03;
+      const prefer = lang === 'zh'
+        ? ['Xiaoxiao', 'Xiaoyi', 'Yunxi', 'Natural', 'Huihui']
+        : ['Aria', 'Jenny', 'Sonia', 'Natural', 'Zira'];
+      const pool = (speechSynthesis.getVoices() || []).filter(
+        v => (v.lang || '').toLowerCase().slice(0, 2) === lang);
+      for (const p of prefer) {
+        const hit = pool.find(v => (v.name || '').includes(p));
+        if (hit) { u.voice = hit; break; }
+      }
       speechSynthesis.cancel();
       speechSynthesis.speak(u);
     } catch (e) {}
   }
 
-  speak(T.speakRest);
+  function speak(key) {
+    try {
+      const a = new Audio('voice_' + key + '_' + lang + '.mp3');
+      a.volume = 0.95;
+      const p = a.play();
+      if (p && p.catch) p.catch(() => speakFallback(key));
+    } catch (e) {
+      speakFallback(key);
+    }
+  }
+
+  speak('rest');
 
   let left = breakSec;
   const secEl = document.getElementById('sec');
@@ -116,12 +138,12 @@
   const timer = setInterval(() => {
     left--;
     secEl.textContent = Math.max(0, left);
-    if (left === Math.floor(breakSec / 2)) speak(T.speakMid);
+    if (left === Math.floor(breakSec / 2)) speak('mid');
     if (left <= 0) {
       clearInterval(timer);
       countEl.style.visibility = 'hidden';
       doneEl.classList.add('show');
-      speak(T.speakDone);
+      speak('done');
     }
   }, 1000);
 })();
