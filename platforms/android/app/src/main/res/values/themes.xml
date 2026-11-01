@@ -16,4 +16,12 @@
         <item name="android:navigationBarColor">#000000</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <!-- 启动页：深绿底 + logo，进入主界面后切回正常主题 -->
+    <style name="Theme.EyeGuard.Splash" parent="Theme.EyeGuard">
+        <item name="android:windowBackground">@drawable/splash_bg</item>
+        <item name="android:statusBarColor">@color/brand_deep</item>
+        <item name="android:navigationBarColor">@color/brand_deep</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

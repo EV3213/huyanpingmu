@@ -20,9 +20,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusView: TextView
     private lateinit var startBtn: Button
     private lateinit var langBtn: Button
+    private lateinit var themeBtn: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setTheme(R.style.Theme_EyeGuard)            // 结束启动页主题
         setContentView(R.layout.activity_main)
         prefs = Prefs(this)
 
@@ -31,6 +33,7 @@ class MainActivity : AppCompatActivity() {
         statusView = findViewById(R.id.statusText)
         startBtn = findViewById(R.id.startButton)
         langBtn = findViewById(R.id.langButton)
+        themeBtn = findViewById(R.id.themeButton)
 
         val intervalSeek = findViewById<SeekBar>(R.id.intervalSeek)
         val breakSeek = findViewById<SeekBar>(R.id.breakSeek)
@@ -76,6 +79,12 @@ class MainActivity : AppCompatActivity() {
             renderAll()
         }
 
+        themeBtn.setOnClickListener {
+            ThemeColor.showPicker(this, prefs.isZh(),
+                onPreview = { renderAll() },
+                onPicked = { renderAll() })
+        }
+
         renderAll()
         ensurePermissions()
     }
@@ -99,9 +108,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderAll() {
+        applyThemeColors()
         renderLabels()
         renderStatus()
         langBtn.text = if (prefs.isZh()) "语言：中文" else "Language: English"
+        themeBtn.text = if (prefs.isZh()) "主题色" else "Theme color"
         startBtn.text = when {
             prefs.enabled && prefs.isZh() -> "停止监控"
             prefs.enabled -> "Stop monitoring"
@@ -112,6 +123,31 @@ class MainActivity : AppCompatActivity() {
             if (prefs.isZh()) "护眼管家" else "EyeGuard"
         findViewById<TextView>(R.id.subtitleText).text =
             if (prefs.isZh()) "看屏幕久了，强制休息一下" else "Take a break before your eyes complain"
+    }
+
+    /** 把当前主题色刷到所有界面元素上 */
+    private fun applyThemeColors() {
+        val primary = ThemeColor.primary(this)
+        val deep = ThemeColor.deep(this)
+        val container = ThemeColor.container(this)
+        val surface = ThemeColor.surface(this)
+
+        findViewById<TextView>(R.id.titleText).setTextColor(deep)
+        startBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+        val restBtn = findViewById<Button>(R.id.restButton)
+        restBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(container)
+        restBtn.setTextColor(deep)
+        langBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(surface)
+        langBtn.setTextColor(deep)
+        themeBtn.backgroundTintList = android.content.res.ColorStateList.valueOf(surface)
+        themeBtn.setTextColor(deep)
+
+        val tints = android.content.res.ColorStateList.valueOf(primary)
+        findViewById<SeekBar>(R.id.intervalSeek).thumbTintList = tints
+        findViewById<SeekBar>(R.id.intervalSeek).progressTintList = tints
+        findViewById<SeekBar>(R.id.breakSeek).thumbTintList = tints
+        findViewById<SeekBar>(R.id.breakSeek).progressTintList = tints
+        findViewById<Switch>(R.id.cameraSwitch).thumbTintList = tints
     }
 
     private fun renderLabels() {

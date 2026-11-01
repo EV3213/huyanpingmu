@@ -48,6 +48,8 @@ I18N = {
         "pause": "暂停监控",
         "exit": "退出护眼管家",
         "language": "语言 / Language：中文",
+        "theme": "主题色",
+        "theme_custom": "自定义颜色…",
         "speak_rest": "休息一下，离开屏幕，看看远处，让眼睛放松一下吧",
         "speak_done": "休息完成，欢迎回来",
     },
@@ -57,10 +59,38 @@ I18N = {
         "pause": "Pause monitoring",
         "exit": "Exit EyeGuard",
         "language": "Language / 语言：English",
+        "theme": "Theme color",
+        "theme_custom": "Custom color…",
         "speak_rest": "Time for a break. Please look away from the screen and relax your eyes.",
         "speak_done": "Break finished. Welcome back.",
     },
 }
+
+# 主题色预设（与移动端一致）
+THEME_PRESETS = [
+    ("森林绿", "Forest", "#12644A"),
+    ("青竹", "Bamboo", "#2E7D5B"),
+    ("松石青", "Teal", "#0E6B6B"),
+    ("远山蓝", "Azure", "#2A5CAA"),
+    ("靛蓝", "Indigo", "#4B3FA8"),
+    ("葡萄紫", "Grape", "#7A3E9D"),
+    ("玫瑰红", "Rose", "#A63B63"),
+    ("暖橙", "Amber", "#B85C1E"),
+    ("琥珀黄", "Ochre", "#A8791B"),
+    ("石墨灰", "Graphite", "#3C4744"),
+]
+DEFAULT_THEME = "#12644A"
+
+
+def normalize_theme(value):
+    """校验主题色，非法时回退默认"""
+    if isinstance(value, str) and len(value) == 7 and value.startswith("#"):
+        try:
+            int(value[1:], 16)
+            return value.upper()
+        except ValueError:
+            pass
+    return DEFAULT_THEME
 
 
 def save_config(cfg):
@@ -72,7 +102,8 @@ def save_config(cfg):
 
 
 def load_config():
-    cfg = {"interval_min": 30, "break_sec": 20, "use_camera": True, "lang": "zh"}
+    cfg = {"interval_min": 30, "break_sec": 20, "use_camera": True,
+           "lang": "zh", "theme_color": DEFAULT_THEME}
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             cfg.update(json.load(f))
@@ -80,6 +111,7 @@ def load_config():
         pass
     if cfg.get("lang") not in I18N:
         cfg["lang"] = "zh"
+    cfg["theme_color"] = normalize_theme(cfg.get("theme_color"))
     return cfg
 
 
@@ -220,23 +252,77 @@ class EyeGuard:
             pass
 
     # ---------- 托盘 ----------
-    def _build_tray(self):
+    def _tray_image(self):
+        """托盘图标跟随主题色"""
+        try:
+            rgb = tuple(int(self.cfg["theme_color"][i:i + 2], 16) for i in (1, 3, 5))
+        except Exception:
+            rgb = (18, 100, 74)
         img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
-        d.ellipse([4, 4, 60, 60], fill=(26, 127, 90, 255))
-        d.ellipse([22, 22, 42, 42], fill=(232, 245, 238, 255))
+        d.ellipse([4, 4, 60, 60], fill=rgb + (255,))
+        d.ellipse([22, 22, 42, 42], fill=(255, 255, 255, 255))
+        return img
 
+    def _refresh_tray(self):
+        try:
+            self.icon.icon = self._tray_image()
+            self.icon.update_menu()
+        except Exception:
+            pass
+
+    def _build_tray(self):
         def toggle_pause(icon, item):
             self.paused = not self.paused
+
+        # 主题色子菜单：预设 + 自定义
+        def make_theme_menu():
+            items = []
+            for zh_name, en_name, hexv in THEME_PRESETS:
+                def set_color(icon=None, item=None, _h=hexv):
+                    self.cfg["theme_color"] = _h
+                    save_config(self.cfg)
+                    logging.info("theme color -> %s", _h)
+                    self._refresh_tray()
+                items.append(TrayItem(
+                    lambda item, _h=hexv, _z=zh_name, _e=en_name:
+                        ("%s %s" % ("●" if self.cfg.get("theme_color") == _h else "○",
+                                    _z if self.cfg.get("lang", "zh") == "zh" else _e)),
+                    action=set_color))
+            return items
+
+        def custom_color(icon=None, item=None):
+            try:
+                import tkinter as tk
+                from tkinter import colorchooser
+                root = tk.Tk()
+                root.withdraw()
+                _, hexv = colorchooser.askcolor(
+                    color=self.cfg.get("theme_color", DEFAULT_THEME),
+                    title=self.tr("theme"))
+                root.destroy()
+                if hexv:
+                    self.cfg["theme_color"] = normalize_theme(
+                        hexv if hexv.startswith("#") else "#" + hexv)
+                    save_config(self.cfg)
+                    logging.info("theme color -> %s", self.cfg["theme_color"])
+                    self._refresh_tray()
+            except Exception as e:
+                logging.warning("custom color failed: %s", e)
 
         menu = TrayMenu(
             TrayItem(lambda item: self.tr("rest_now"), action=lambda i, it: self.start_rest()),
             TrayItem(lambda item: self.tr("pause"), action=toggle_pause,
                      checked=lambda item: self.paused),
             TrayItem(lambda item: self.tr("language"), action=self.toggle_lang),
+            TrayItem(lambda item: self.tr("theme"),
+                     TrayMenu(*make_theme_menu(),
+                              TrayItem(lambda item: self.tr("theme_custom"),
+                                       action=custom_color))),
             TrayItem(lambda item: self.tr("exit"), action=lambda i, it: self.quit(i)),
         )
-        self.icon = pystray.Icon("EyeGuard", img, self.tr("tray_title"), menu)
+        self.icon = pystray.Icon("EyeGuard", self._tray_image(),
+                                 self.tr("tray_title"), menu)
         self.icon.run_detached()
 
     def quit(self, icon=None):
@@ -267,7 +353,8 @@ class EyeGuard:
 
         # Kiosk 全屏：无边框、置顶、覆盖任务栏
         params = urllib.parse.urlencode({"break": self.break_sec,
-                                         "lang": self.cfg.get("lang", "zh")})
+                                         "lang": self.cfg.get("lang", "zh"),
+                                         "theme": self.cfg.get("theme_color", DEFAULT_THEME).lstrip("#")})
         url = "file:///" + REST_HTML.replace("\\", "/") + "?" + params
         profile = os.path.join(BASE, "Profile")
         try:

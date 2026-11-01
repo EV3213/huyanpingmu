@@ -108,6 +108,16 @@
             android:textColor="#12644A"
             android:textSize="15sp" />
 
+        <Button
+            android:id="@+id/themeButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="#EEF6F2"
+            android:text="主题色"
+            android:textColor="#12644A"
+            android:textSize="15sp" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

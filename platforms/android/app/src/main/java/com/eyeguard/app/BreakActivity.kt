@@ -61,6 +61,10 @@ class BreakActivity : Activity() {
         else
             "Look away from the screen at something 6 meters away\nBlink more · Stretch · Take a sip of water"
         doneView.text = if (isZh) "✨ 休息完成，马上回到工作" else "✨ Break finished — back to work"
+        // 休息页强调文字跟随主题色（深色背景上用亮色变体）
+        val accent = ThemeColor.mix(ThemeColor.primary(this), Color.WHITE, 0.55f)
+        countView.setTextColor(accent)
+        doneView.setTextColor(accent)
         updateCount()
 
         playBackgroundVideo()

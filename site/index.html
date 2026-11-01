@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>护眼管家 EyeGuard — 看屏幕久了，强制休息一下</title>
+<meta name="description" content="护眼管家：本地人脸检测判断你是否在看屏幕，连续注视 30 分钟就全屏绿植 + 语音提醒。支持 Windows / macOS / Linux / Android / iOS / iPadOS，不联网、不收集数据。">
+<meta name="theme-color" content="#12644A">
+<link rel="icon" href="assets/icon-1024.png">
+<style>
+  :root {
+    --brand: #12644A;
+    --brand-deep: #0A3A2B;
+    --brand-mid: #17694F;
+    --brand-soft: #E8F5EE;
+    --brand-ghost: #F4FAF7;
+    --ink: #12211C;
+    --ink-soft: #5C7A6E;
+    --line: #E2EDE7;
+    --radius: 18px;
+    --shadow: 0 18px 50px -22px rgba(9, 58, 43, .45);
+    --max: 1120px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system,
+                 system-ui, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: #fff;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+
+  .wrap { width: 100%; max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- 顶部导航 ---------- */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255, 255, 255, .82);
+    backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav { display: flex; align-items: center; gap: 20px; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .3px; }
+  .brand img { width: 30px; height: 30px; border-radius: 9px; }
+  .nav-links { display: flex; gap: 26px; margin-left: auto; font-size: 14px; color: var(--ink-soft); }
+  .nav-links a:hover { color: var(--brand); }
+  .nav-actions { display: flex; align-items: center; gap: 10px; }
+
+  .ghost-btn {
+    font: inherit; font-size: 14px; cursor: pointer;
+    padding: 8px 14px; border-radius: 10px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink-soft);
+    transition: .18s;
+  }
+  .ghost-btn:hover { border-color: var(--brand); color: var(--brand); }
+
+  /* ---------- 按钮 ---------- */
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 14px 24px; border-radius: 13px;
+    font-weight: 700; font-size: 15px; cursor: pointer;
+    border: 1px solid transparent; transition: transform .16s, box-shadow .16s, background .16s;
+  }
+  .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 12px 26px -14px var(--brand); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 34px -16px var(--brand); }
+  .btn-soft { background: var(--brand-soft); color: var(--brand); }
+  .btn-soft:hover { transform: translateY(-2px); }
+  .btn-line { border-color: var(--line); color: var(--ink-soft); background: #fff; }
+  .btn-line:hover { border-color: var(--brand); color: var(--brand); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative; overflow: hidden;
+    background:
+      radial-gradient(900px 420px at 78% 8%, rgba(35, 140, 108, .30), transparent 62%),
+      linear-gradient(160deg, #0E4D39 0%, #08281E 100%);
+    color: #fff;
+    padding: 84px 0 96px;
+  }
+  .hero-grid {
+    position: relative; z-index: 2;
+    display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; letter-spacing: .6px; text-transform: uppercase;
+    color: #9FD3BE; margin-bottom: 18px;
+  }
+  .eyebrow::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%;
+    background: #4ADE9B; box-shadow: 0 0 0 4px rgba(74, 222, 155, .18);
+  }
+  .hero h1 {
+    font-size: clamp(38px, 4.6vw, 58px); line-height: 1.14;
+    letter-spacing: -.5px; font-weight: 800;
+  }
+  .hero h1 em { font-style: normal; color: #7FE3B6; }
+  .hero p.lead {
+    margin-top: 20px; font-size: 17px; color: rgba(255, 255, 255, .74);
+    max-width: 33em;
+  }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+  .hero-actions .btn-line { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.22); color: #fff; }
+  .hero-actions .btn-line:hover { background: rgba(255,255,255,.14); color: #fff; }
+  .hero-note { margin-top: 18px; font-size: 13px; color: rgba(255,255,255,.48); }
+
+  .hero-visual { position: relative; display: grid; place-items: center; }
+  .hero-visual .frame {
+    width: min(360px, 100%); aspect-ratio: 1;
+    border-radius: 34px; padding: 3px;
+    background: linear-gradient(150deg, rgba(255,255,255,.4), rgba(255,255,255,.05));
+    box-shadow: 0 40px 80px -30px rgba(0,0,0,.65);
+  }
+  .hero-visual .frame img { width: 100%; height: 100%; border-radius: 32px; }
+  .chip {
+    position: absolute; display: flex; align-items: center; gap: 9px;
+    padding: 10px 15px; border-radius: 13px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,.94); color: #0E4D39;
+    box-shadow: 0 14px 30px -16px rgba(0,0,0,.6);
+  }
+  .chip.one { top: 6%; left: -6%; }
+  .chip.two { bottom: 10%; right: -8%; }
+  .chip svg { flex: none; }
+
+  /* ---------- 通用 section ---------- */
+  section { padding: 84px 0; }
+  .section-head { max-width: 640px; margin-bottom: 44px; }
+  .section-head .kicker {
+    font-size: 13px; font-weight: 700; letter-spacing: 1.4px;
+    text-transform: uppercase; color: var(--brand); margin-bottom: 12px;
+  }
+  .section-head h2 {
+    font-size: clamp(26px, 3vw, 36px); line-height: 1.3; letter-spacing: -.3px;
+  }
+  .section-head p { margin-top: 14px; color: var(--ink-soft); font-size: 16px; }
+
+  /* ---------- 工作流程 ---------- */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .step {
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 26px 24px; position: relative; transition: .2s;
+  }
+  .step:hover { border-color: color-mix(in srgb, var(--brand) 35%, var(--line)); transform: translateY(-3px); }
+  .step .num {
+    width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center;
+    background: var(--brand-soft); color: var(--brand); font-weight: 800; font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .step h3 { font-size: 17px; margin-bottom: 8px; }
+  .step p { font-size: 14.5px; color: var(--ink-soft); }
+
+  /* ---------- 主题色演示 ---------- */
+  .theme-section { background: var(--brand-ghost); }
+  .theme-demo {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 34px; align-items: center;
+  }
+  .swatches { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+  .swatch {
+    width: 42px; height: 42px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; box-shadow: 0 4px 12px -4px rgba(0,0,0,.25);
+    transition: transform .15s, border-color .15s;
+  }
+  .swatch:hover { transform: scale(1.08); }
+  .swatch.active { border-color: #fff; outline: 2px solid var(--brand); outline-offset: 2px; }
+  .picker-row {
+    display: flex; align-items: center; gap: 12px; margin-top: 20px;
+    font-size: 14px; color: var(--ink-soft);
+  }
+  input[type="color"] {
+    width: 46px; height: 34px; border: 1px solid var(--line);
+    border-radius: 9px; background: #fff; cursor: pointer; padding: 3px;
+  }
+  .theme-preview {
+    background: #fff; border: 1px solid var(--line); border-radius: 22px;
+    padding: 22px; box-shadow: var(--shadow);
+  }
+  .tp-head { display: flex; align-items: center; gap: 10px; }
+  .tp-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--brand); }
+  .tp-title { font-weight: 800; color: var(--brand); font-size: 19px; }
+  .tp-sub { font-size: 12.5px; color: var(--ink-soft); margin: 4px 0 18px; }
+  .tp-bar { height: 8px; border-radius: 6px; background: var(--line); margin: 10px 0 4px; position: relative; }
+  .tp-bar::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 62%;
+    border-radius: 6px; background: var(--brand);
+  }
+  .tp-btn {
+    margin-top: 16px; text-align: center; padding: 12px; border-radius: 12px;
+    background: var(--brand); color: #fff; font-weight: 700; font-size: 14px;
+  }
+  .tp-btn.alt { background: var(--brand-soft); color: var(--brand); margin-top: 10px; }
+
+  /* ---------- 平台 ---------- */
+  .platforms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .platform {
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 24px;
+    display: flex; flex-direction: column; gap: 10px; transition: .2s; background: #fff;
+  }
+  .platform:hover { border-color: color-mix(in srgb, var(--brand) 35%, var(--line)); box-shadow: var(--shadow); }
+  .platform .p-top { display: flex; align-items: center; gap: 12px; }
+  .platform .p-ico {
+    width: 38px; height: 38px; border-radius: 11px; background: var(--brand-soft);
+    color: var(--brand); display: grid; place-items: center; flex: none;
+  }
+  .platform h3 { font-size: 16px; }
+  .platform .tag {
+    font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    background: var(--brand-soft); color: var(--brand); margin-left: auto;
+  }
+  .platform .tag.alt { background: #F1F1EE; color: #6B6B63; }
+  .platform p { font-size: 14px; color: var(--ink-soft); flex: 1; }
+  .platform code {
+    font-size: 12.5px; background: var(--brand-ghost); color: var(--brand);
+    padding: 6px 10px; border-radius: 8px; overflow-wrap: anywhere;
+  }
+
+  /* ---------- 隐私 ---------- */
+  .privacy { background: linear-gradient(160deg, #0E4D39, #08281E); color: #fff; }
+  .privacy .section-head h2 { color: #fff; }
+  .privacy .section-head p { color: rgba(255,255,255,.66); }
+  .privacy .section-head .kicker { color: #7FE3B6; }
+  .priv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .priv-item {
+    border: 1px solid rgba(255,255,255,.14); border-radius: var(--radius);
+    padding: 24px; background: rgba(255,255,255,.04);
+  }
+  .priv-item h3 { font-size: 16px; margin-bottom: 8px; color: #fff; }
+  .priv-item p { font-size: 14px; color: rgba(255,255,255,.64); }
+  .priv-item .ico { color: #4ADE9B; margin-bottom: 14px; }
+
+  /* ---------- 下载 / CTA ---------- */
+  .cta { text-align: center; padding: 90px 0; }
+  .cta h2 { font-size: clamp(26px, 3vw, 36px); }
+  .cta p { color: var(--ink-soft); margin: 14px auto 30px; max-width: 34em; }
+  .cta .row { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+
+  /* ---------- 页脚 ---------- */
+  footer { border-top: 1px solid var(--line); padding: 34px 0; color: var(--ink-soft); font-size: 13.5px; }
+  .foot { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .foot .brand { font-size: 14px; color: var(--ink); }
+  .foot .spacer { flex: 1; }
+  .foot a:hover { color: var(--brand); }
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width: 900px) {
+    .hero-grid, .theme-demo { grid-template-columns: 1fr; }
+    .hero-visual { order: -1; }
+    .hero-visual .frame { width: min(280px, 70%); }
+    .chip.one { left: 2%; } .chip.two { right: 2%; }
+    .steps, .platforms, .priv-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    header .wrap { padding: 0 18px; }
+    section { padding: 62px 0; }
+    .hero { padding: 56px 0 70px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top">
+      <img src="assets/icon-1024.png" alt="EyeGuard">
+      <span data-zh="护眼管家" data-en="EyeGuard">护眼管家</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#how" data-zh="怎么工作" data-en="How it works">怎么工作</a>
+      <a href="#theme" data-zh="主题色" data-en="Theme colour">主题色</a>
+      <a href="#platforms" data-zh="下载" data-en="Download">下载</a>
+      <a href="#privacy" data-zh="隐私" data-en="Privacy">隐私</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="ghost-btn" id="langBtn" type="button">EN</button>
+      <a class="ghost-btn" href="https://github.com/EV3213/huyanpingmu" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow" data-zh="本地人脸检测 · 不联网" data-en="On-device face detection · No network">本地人脸检测 · 不联网</div>
+        <h1 data-zh="看屏幕久了，<em>强制</em>休息一下" data-en="Staring too long? <em>Take</em> a real break">
+          看屏幕久了，<em>强制</em>休息一下
+        </h1>
+        <p class="lead" data-zh="前置摄像头在本机判断你是否还坐在屏幕前。连续注视超过你设定的时长，一块全屏的实拍绿植就会接管屏幕，配上一句轻声提醒——你才真的会离开屏幕。"
+           data-en="The front camera tells, on device, whether you are still there. Once you pass your viewing limit, full-screen greenery takes over with a spoken reminder — so you actually look away.">
+          前置摄像头在本机判断你是否还坐在屏幕前。连续注视超过你设定的时长，一块全屏的实拍绿植就会接管屏幕，配上一句轻声提醒——你才真的会离开屏幕。
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#platforms">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            <span data-zh="选择你的平台" data-en="Choose your platform">选择你的平台</span>
+          </a>
+          <a class="btn btn-line" href="https://github.com/EV3213/huyanpingmu" target="_blank" rel="noopener">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+            <span data-zh="查看源码" data-en="View source">查看源码</span>
+          </a>
+        </div>
+        <p class="hero-note" data-zh="Windows / macOS / Linux 开箱即用 · Android 可自行编译 · iOS / iPadOS 需 Xcode"
+           data-en="Windows / macOS / Linux ready to run · Android build it yourself · iOS / iPadOS need Xcode">
+          Windows / macOS / Linux 开箱即用 · Android 可自行编译 · iOS / iPadOS 需 Xcode
+        </p>
+      </div>
+
+      <div class="hero-visual">
+        <div class="frame"><img src="assets/icon-1024.png" alt="护眼管家图标"></div>
+        <div class="chip one">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#12644A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <span data-zh="检测到你在看屏幕" data-en="You are at the screen">检测到你在看屏幕</span>
+        </div>
+        <div class="chip two">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#12644A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span data-zh="已连续 30 分钟" data-en="30 minutes and counting">已连续 30 分钟</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 怎么工作 -->
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker" data-zh="它怎么工作" data-en="How it works">它怎么工作</div>
+        <h2 data-zh="不猜、不打扰，只在真的该休息时打断你" data-en="No guessing, no nagging — it interrupts only when it should">
+          不猜、不打扰，只在真的该休息时打断你
+        </h2>
+        <p data-zh="很多护眼工具只会机械倒计时。护眼管家看的是「你到底在不在」，起身接水、开会走开，计时会自动归零。"
+           data-en="Most break timers just count down. EyeGuard watches whether you are actually there — stand up for water and the counter resets.">
+          很多护眼工具只会机械倒计时。护眼管家看的是「你到底在不在」，起身接水、开会走开，计时会自动归零。
+        </p>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="num">1</div>
+          <h3 data-zh="每秒一次，本机判断" data-en="One local check per second">每秒一次，本机判断</h3>
+          <p data-zh="前置摄像头以低分辨率做一次人脸检测，只回答「有没有人」。画面在内存里用完即丢，不写盘、不上传。"
+             data-en="The front camera runs a low-resolution face check and only answers “is someone there”. Frames are discarded from memory immediately.">
+            前置摄像头以低分辨率做一次人脸检测，只回答「有没有人」。画面在内存里用完即丢，不写盘、不上传。
+          </p>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <h3 data-zh="到点接管屏幕" data-en="It takes over the screen">到点接管屏幕</h3>
+          <p data-zh="连续注视到达阈值（默认 30 分钟），全屏休息页覆盖一切，倒计时走完前无法误触关闭。"
+             data-en="At your limit (30 minutes by default) the break screen covers everything and cannot be dismissed by accident.">
+            连续注视到达阈值（默认 30 分钟），全屏休息页覆盖一切，倒计时走完前无法误触关闭。
+          </p>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <h3 data-zh="绿植 + 一句话" data-en="Greenery and a soft voice">绿植 + 一句话</h3>
+          <p data-zh="航拍森林与近景绿植两段实拍视频随机播放，配神经语音：「休息一下，离开屏幕，看看远处」。"
+             data-en="Aerial forest or close-up foliage plays at random, with a neural voice: “Time for a break — look away for a moment.”">
+            航拍森林与近景绿植两段实拍视频随机播放，配神经语音：「休息一下，离开屏幕，看看远处」。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 主题色演示 -->
+  <section id="theme" class="theme-section">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker" data-zh="主题色" data-en="Theme colour">主题色</div>
+        <h2 data-zh="连配色都由你定" data-en="Even the palette is yours">
+          连配色都由你定
+        </h2>
+        <p data-zh="内置 10 套配色，也能自由取色。选一个试试——这个页面的强调色会跟着变。"
+           data-en="Ten presets, plus a free colour picker. Try one — the accent colour of this page follows along.">
+          内置 10 套配色，也能自由取色。选一个试试——这个页面的强调色会跟着变。
+        </p>
+      </div>
+
+      <div class="theme-demo">
+        <div>
+          <div class="swatches" id="swatches"></div>
+          <div class="picker-row">
+            <input type="color" id="customColor" value="#12644a" aria-label="自定义颜色">
+            <span data-zh="自定义颜色，选完立即生效" data-en="Pick any colour — applied instantly">自定义颜色，选完立即生效</span>
+          </div>
+        </div>
+
+        <div class="theme-preview">
+          <div class="tp-head">
+            <span class="tp-dot"></span>
+            <span class="tp-title" data-zh="护眼管家" data-en="EyeGuard">护眼管家</span>
+          </div>
+          <div class="tp-sub" data-zh="看屏幕久了，强制休息一下" data-en="Take a break before your eyes complain">看屏幕久了，强制休息一下</div>
+          <div style="font-size:13px;font-weight:700" data-zh="注视 30 分钟后休息" data-en="Break after 30 min of viewing">注视 30 分钟后休息</div>
+          <div class="tp-bar"></div>
+          <div style="font-size:13px;font-weight:700;margin-top:12px" data-zh="每次休息 20 秒" data-en="Each break lasts 20 s">每次休息 20 秒</div>
+          <div class="tp-bar" style="--w:34%"></div>
+          <div class="tp-btn" data-zh="开始监控" data-en="Start monitoring">开始监控</div>
+          <div class="tp-btn alt" data-zh="立即休息一次" data-en="Take a break now">立即休息一次</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 平台 -->
+  <section id="platforms">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker" data-zh="六个平台" data-en="Six platforms">六个平台</div>
+        <h2 data-zh="同一套逻辑，在你每块屏幕上" data-en="One idea, on every screen you own">
+          同一套逻辑，在你每块屏幕上
+        </h2>
+        <p data-zh="桌面三端开箱即用；移动端是原生工程，需要用对应工具链编译。全部源码都在仓库里。"
+           data-en="The three desktop builds run out of the box; mobile are native projects you compile with the matching toolchain. All source is in the repo.">
+          桌面三端开箱即用；移动端是原生工程，需要用对应工具链编译。全部源码都在仓库里。
+        </p>
+      </div>
+
+      <div class="platforms">
+        <div class="platform">
+          <div class="p-top">
+            <span class="p-ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.2 4.5v7H3zM11.2 4.3 21 3v8.5h-9.8zM3 12.5h7.2v7L3 18.5zM11.2 12.5H21V21l-9.8-1.3z"/></svg>
+            </span>
+            <h3>Windows</h3>
+            <span class="tag" data-zh="即装即用" data-en="Ready">即装即用</span>
+          </div>
+          <p data-zh="双击安装脚本选语言即可，注册表自启，托盘常驻，无窗口。"
+             data-en="Run the installer, pick a language. Autostarts via registry, lives in the tray, no window.">
+            双击安装脚本选语言即可，注册表自启，托盘常驻，无窗口。
+          </p>
+          <code>platforms/windows/安装到本机.bat</code>
+        </div>
+
+        <div class="platform">
+          <div class="p-top">
+            <span class="p-ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.7-1.8-3.3-1.8-1.4-.1-2.7.8-3.4.8s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.2 1.2-2.4 1.3-2.5-.1 0-2.5-1-2.7-3.5ZM14.3 5.6c.6-.8 1-1.8.9-2.8-.9.1-2 .6-2.7 1.4-.6.7-1.1 1.7-.9 2.7 1 .1 2-.5 2.7-1.3Z"/></svg>
+            </span>
+            <h3>macOS</h3>
+            <span class="tag" data-zh="即装即用" data-en="Ready">即装即用</span>
+          </div>
+          <p data-zh="LaunchAgent 开机自启，菜单栏图标，AVFoundation 取摄像头。"
+             data-en="LaunchAgent autostart, menu-bar icon, camera via AVFoundation.">
+            LaunchAgent 开机自启，菜单栏图标，AVFoundation 取摄像头。
+          </p>
+          <code>platforms/macos/install.sh</code>
+        </div>
+
+        <div class="platform">
+          <div class="p-top">
+            <span class="p-ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c2.2 0 3.4 1.4 3.4 3.3 0 1-.4 1.9-1 2.6 2.6.6 4.1 2.3 4.1 4.6 0 1.2-.5 2.2-1.3 3 .5.5.8 1.2.8 2 0 1.6-1.2 2.8-2.9 2.8-.9 0-1.7-.4-2.3-1-.5.6-1.3 1-2.3 1-1.7 0-2.9-1.2-2.9-2.8 0-.8.3-1.5.8-2-.8-.8-1.3-1.8-1.3-3 0-2.3 1.5-4 4.1-4.6-.6-.7-1-1.6-1-2.6C8.6 3.4 9.8 2 12 2Z"/></svg>
+            </span>
+            <h3>Linux</h3>
+            <span class="tag" data-zh="即装即用" data-en="Ready">即装即用</span>
+          </div>
+          <p data-zh="XDG autostart，V4L2 取摄像头，Tk 兜底全屏休息页。"
+             data-en="XDG autostart, V4L2 camera, Tk fallback break screen.">
+            XDG autostart，V4L2 取摄像头，Tk 兜底全屏休息页。
+          </p>
+          <code>platforms/linux/install.sh</code>
+        </div>
+
+        <div class="platform">
+          <div class="p-top">
+            <span class="p-ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 9h12v9a2 2 0 0 1-2 2h-1v2h-2v-2h-2v2H9v-2H8a2 2 0 0 1-2-2V9Zm-2.5 0A1.5 1.5 0 0 1 5 10.5v5a1.5 1.5 0 0 1-3 0v-5A1.5 1.5 0 0 1 3.5 9Zm17 0a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-3 0v-5A1.5 1.5 0 0 1 20.5 9ZM7 3h1.5a4.5 4.5 0 0 1 7 0H17v4H7V3Z"/></svg>
+            </span>
+            <h3>Android</h3>
+            <span class="tag alt" data-zh="需编译" data-en="Build">需编译</span>
+          </div>
+          <p data-zh="Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页。"
+             data-en="Kotlin, CameraX and ML Kit on-device faces, foreground service, boot autostart.">
+            Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页。
+          </p>
+          <code>cd platforms/android &amp;&amp; ./gradlew assembleDebug</code>
+        </div>
+
+        <div class="platform">
+          <div class="p-top">
+            <span class="p-ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.7-1.8-3.3-1.8-1.4-.1-2.7.8-3.4.8s-1.8-.8-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2 0 1.6-.7 3-.7s1.8.7 3 .7 2-1.1 2.8-2.2c.9-1.2 1.2-2.4 1.3-2.5-.1 0-2.5-1-2.7-3.5ZM14.3 5.6c.6-.8 1-1.8.9-2.8-.9.1-2 .6-2.7 1.4-.6.7-1.1 1.7-.9 2.7 1 .1 2-.5 2.7-1.3Z"/></svg>
+            </span>
+            <h3>iOS</h3>
+            <span class="tag alt" data-zh="需 Xcode" data-en="Needs Xcode">需 Xcode</span>
+          </div>
+          <p data-zh="SwiftUI + Vision 人脸，前台可用摄像头；后台改为本地通知（系统限制）。"
+             data-en="SwiftUI and Vision; camera works in the foreground, notifications in the background (iOS limit).">
+            SwiftUI + Vision 人脸，前台可用摄像头；后台改为本地通知（系统限制）。
+          </p>
+          <code>xcodegen generate &amp;&amp; open EyeGuard.xcodeproj</code>
+        </div>
+
+        <div class="platform">
+          <div class="p-top">
+            <span class="p-ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-7l1.6 2H8.4L10 19H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm2 2v11h14V6H5Z"/></svg>
+            </span>
+            <h3>iPadOS</h3>
+            <span class="tag alt" data-zh="需 Xcode" data-en="Needs Xcode">需 Xcode</span>
+          </div>
+          <p data-zh="独立 bundle，只面向 iPad，版心加宽到 820pt，横竖屏都适配。"
+             data-en="Separate bundle, iPad only, wider 820pt layout, both orientations.">
+            独立 bundle，只面向 iPad，版心加宽到 820pt，横竖屏都适配。
+          </p>
+          <code>platforms/ipados/project.yml</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 隐私 -->
+  <section id="privacy" class="privacy">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker" data-zh="隐私" data-en="Privacy">隐私</div>
+        <h2 data-zh="摄像头在你手里，数据不出这台机器" data-en="The camera is yours; nothing leaves the device">
+          摄像头在你手里，数据不出这台机器
+        </h2>
+        <p data-zh="这不是一句宣传语，是代码里能做到的事实：没有网络请求、没有统计 SDK、没有云端识别。"
+           data-en="Not a slogan — it is what the code does: no network calls, no analytics SDK, no cloud recognition.">
+          这不是一句宣传语，是代码里能做到的事实：没有网络请求、没有统计 SDK、没有云端识别。
+        </p>
+      </div>
+
+      <div class="priv-grid">
+        <div class="priv-item">
+          <div class="ico">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6l-8-3Z"/></svg>
+          </div>
+          <h3 data-zh="画面不留存" data-en="No frames kept">画面不留存</h3>
+          <p data-zh="检测在内存中完成，一帧用完即丢。不截图、不录像、不写日志。"
+             data-en="Detection happens in memory; each frame is discarded. No screenshots, no recordings, no logs.">
+            检测在内存中完成，一帧用完即丢。不截图、不录像、不写日志。
+          </p>
+        </div>
+        <div class="priv-item">
+          <div class="ico">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          </div>
+          <h3 data-zh="零网络请求" data-en="Zero network calls">零网络请求</h3>
+          <p data-zh="运行时不需要联网；人脸模型随安装包提供，语音是预生成好的音频文件。"
+             data-en="It runs offline: the face model ships with the app, the voice is pre-generated audio.">
+            运行时不需要联网；人脸模型随安装包提供，语音是预生成好的音频文件。
+          </p>
+        </div>
+        <div class="priv-item">
+          <div class="ico">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg>
+          </div>
+          <h3 data-zh="拒绝授权也能用" data-en="Works without permission">拒绝授权也能用</h3>
+          <p data-zh="不给摄像头权限就自动降级为纯计时模式，30 分钟照样提醒。"
+             data-en="Deny the camera and it falls back to a pure timer — still reminds you every 30 minutes.">
+            不给摄像头权限就自动降级为纯计时模式，30 分钟照样提醒。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta">
+    <div class="wrap">
+      <h2 data-zh="现在就让它管住你的眼睛" data-en="Let it guard your eyes, starting now">现在就让它管住你的眼睛</h2>
+      <p data-zh="开源、免费、不联网。三分钟装好，之后你什么都不用管。"
+         data-en="Open source, free, offline. Three minutes to install, then forget about it.">
+        开源、免费、不联网。三分钟装好，之后你什么都不用管。
+      </p>
+      <div class="row">
+        <a class="btn btn-primary" href="https://github.com/EV3213/huyanpingmu" target="_blank" rel="noopener"
+           data-zh="前往仓库下载" data-en="Get it on GitHub">前往仓库下载</a>
+        <a class="btn btn-soft" href="#platforms" data-zh="查看安装方式" data-en="See install steps">查看安装方式</a>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span class="brand">
+      <img src="assets/icon-1024.png" alt="" style="width:20px;height:20px;border-radius:6px">
+      <span data-zh="护眼管家 EyeGuard" data-en="EyeGuard">护眼管家 EyeGuard</span>
+    </span>
+    <span data-zh="开源 · 免费 · 不联网" data-en="Open source · Free · Offline">开源 · 免费 · 不联网</span>
+    <span class="spacer"></span>
+    <a href="https://github.com/EV3213/huyanpingmu" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/EV3213/huyanpingmu/blob/main/store/privacy-policy.md" target="_blank" rel="noopener"
+       data-zh="隐私政策" data-en="Privacy policy">隐私政策</a>
+  </footer>
+
+<script>
+(function () {
+  var PRESETS = [
+    ['#12644A', '森林绿', 'Forest'],
+    ['#2E7D5B', '青竹', 'Bamboo'],
+    ['#0E6B6B', '松石青', 'Teal'],
+    ['#2A5CAA', '远山蓝', 'Azure'],
+    ['#4B3FA8', '靛蓝', 'Indigo'],
+    ['#7A3E9D', '葡萄紫', 'Grape'],
+    ['#A63B63', '玫瑰红', 'Rose'],
+    ['#B85C1E', '暖橙', 'Amber'],
+    ['#A8791B', '琥珀黄', 'Ochre'],
+    ['#3C4744', '石墨灰', 'Graphite']
+  ];
+
+  var root = document.documentElement;
+
+  // ---------- 颜色工具 ----------
+  function hexToRgb(hex) {
+    var h = String(hex || '').replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    if (!/^[0-9a-fA-F]{6}$/.test(h)) h = '12644A';
+    var n = parseInt(h, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgbToHex(rgb) {
+    return '#' + rgb.map(function (v) {
+      var s = Math.max(0, Math.min(255, Math.round(v))).toString(16);
+      return s.length === 1 ? '0' + s : s;
+    }).join('');
+  }
+  function mix(rgb, target, keep) {   // keep = 保留原色比例
+    return rgb.map(function (v, i) { return v * keep + target[i] * (1 - keep); });
+  }
+  function shade(rgb, f) { return rgb.map(function (v) { return v * f; }); }
+
+  // ---------- 应用主题 ----------
+  function applyTheme(hex) {
+    var rgb = hexToRgb(hex);
+    root.style.setProperty('--brand', rgbToHex(rgb));
+    root.style.setProperty('--brand-deep', rgbToHex(shade(rgb, 0.35)));
+    root.style.setProperty('--brand-mid', rgbToHex(shade(rgb, 0.78)));
+    root.style.setProperty('--brand-soft', rgbToHex(mix(rgb, [255, 255, 255], 0.14)));
+    root.style.setProperty('--brand-ghost', rgbToHex(mix(rgb, [255, 255, 255], 0.06)));
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', rgbToHex(rgb));
+
+    document.querySelectorAll('.swatch').forEach(function (el) {
+      el.classList.toggle('active',
+        el.getAttribute('data-hex').toLowerCase() === rgbToHex(rgb).toLowerCase());
+    });
+    try { localStorage.setItem('eyeguard_theme', rgbToHex(rgb)); } catch (e) {}
+  }
+
+  // ---------- 色板 ----------
+  var box = document.getElementById('swatches');
+  PRESETS.forEach(function (p) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'swatch';
+    b.style.background = p[0];
+    b.setAttribute('data-hex', p[0]);
+    b.setAttribute('aria-label', p[1]);
+    b.title = p[1] + ' / ' + p[2];
+    b.addEventListener('click', function () {
+      applyTheme(p[0]);
+      document.getElementById('customColor').value = p[0].toLowerCase();
+    });
+    box.appendChild(b);
+  });
+
+  var picker = document.getElementById('customColor');
+  picker.addEventListener('input', function () { applyTheme(picker.value); });
+
+  var saved = null;
+  try { saved = localStorage.getItem('eyeguard_theme'); } catch (e) {}
+  applyTheme(saved || PRESETS[0][0]);
+  if (saved) picker.value = saved;
+
+  // ---------- 中英切换 ----------
+  var langBtn = document.getElementById('langBtn');
+  var current = 'zh';
+
+  function render() {
+    document.querySelectorAll('[data-zh]').forEach(function (el) {
+      var text = el.getAttribute('data-' + current);
+      if (text != null) el.innerHTML = text;
+    });
+    document.documentElement.lang = current === 'zh' ? 'zh-CN' : 'en';
+    langBtn.textContent = current === 'zh' ? 'EN' : '中文';
+    document.title = current === 'zh'
+      ? '护眼管家 EyeGuard — 看屏幕久了，强制休息一下'
+      : 'EyeGuard — Force a real break from your screen';
+  }
+
+  langBtn.addEventListener('click', function () {
+    current = current === 'zh' ? 'en' : 'zh';
+    try { localStorage.setItem('eyeguard_lang', current); } catch (e) {}
+    render();
+  });
+
+  try {
+    var savedLang = localStorage.getItem('eyeguard_lang');
+    if (savedLang === 'en' || savedLang === 'zh') current = savedLang;
+  } catch (e) {}
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @EnvironmentObject var monitor: Monitor
@@ -6,14 +7,24 @@ struct ContentView: View {
     @AppStorage(Settings.breakKey) private var breakSec: Int = 20
     @AppStorage(Settings.cameraKey) private var useCamera: Bool = true
     @AppStorage(Settings.langKey) private var lang: String = "zh"
+    @AppStorage(ThemeColor.key) private var themeHex: String = ThemeColor.defaultHex
 
     private var zh: Bool { lang != "en" }
+
+    /// 自定义取色：与预设色板共用一个 hex 存储
+    private var customColor: Binding<Color> {
+        Binding(
+            get: { Color(hex: themeHex) },
+            set: { themeHex = ThemeColor.toHex(UIColor($0)) }
+        )
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
                 settingsCard
+                themeCard
                 statusRow
                 actionButtons
                 Text(L.t(L.privacy))
@@ -25,12 +36,9 @@ struct ContentView: View {
             .frame(maxWidth: 620, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
-        .background(Color(red: 0.96, green: 0.98, blue: 0.97).ignoresSafeArea())
+        .background(ThemeColor.background.ignoresSafeArea())
         .fullScreenCover(isPresented: $monitor.showBreak) {
             BreakView()
-        }
-        .onChange(of: lang) { _, _ in
-            // 语言切换后刷新界面文案（AppStorage 驱动）
         }
     }
 
@@ -38,7 +46,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(L.t(L.app))
                 .font(.system(size: 30, weight: .bold))
-                .foregroundStyle(Color(red: 0.07, green: 0.39, blue: 0.29))
+                .foregroundStyle(ThemeColor.deep)
             Text(L.t(L.subtitle))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -55,6 +63,7 @@ struct ContentView: View {
                     get: { Double(intervalMin) },
                     set: { intervalMin = max(1, Int($0.rounded())) }
                 ), in: 1...60, step: 1)
+                .tint(ThemeColor.color)
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -64,10 +73,67 @@ struct ContentView: View {
                     get: { Double(breakSec) },
                     set: { breakSec = max(5, Int($0.rounded())) }
                 ), in: 5...60, step: 1)
+                .tint(ThemeColor.color)
             }
 
             Toggle(isOn: $useCamera) {
                 Text(L.t(L.camera)).font(.headline)
+            }
+            .tint(ThemeColor.color)
+        }
+        .padding(20)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
+    }
+
+    // MARK: - 主题色（预设色板 + 自定义取色）
+
+    private var themeCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(zh ? "主题色" : "Theme color")
+                    .font(.headline)
+                Spacer()
+                Text(themeHex.uppercased())
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(ThemeColor.presets, id: \.hex) { p in
+                        Button {
+                            themeHex = p.hex
+                        } label: {
+                            Circle()
+                                .fill(Color(hex: p.hex))
+                                .frame(width: 34, height: 34)
+                                .overlay(
+                                    Circle().strokeBorder(
+                                        Color.white,
+                                        lineWidth: themeHex.caseInsensitiveCompare(p.hex) == .orderedSame ? 3 : 0)
+                                )
+                                .overlay(
+                                    Circle().strokeBorder(
+                                        Color.black.opacity(0.08), lineWidth: 1)
+                                )
+                                .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(zh ? p.zh : p.en)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
+            HStack(spacing: 10) {
+                ColorPicker(zh ? "自定义颜色" : "Custom color",
+                            selection: customColor, supportsOpacity: false)
+                    .font(.subheadline)
+                Spacer()
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(ThemeColor.color)
+                    .frame(width: 44, height: 26)
             }
         }
         .padding(20)
@@ -78,8 +144,7 @@ struct ContentView: View {
     private var statusRow: some View {
         HStack(spacing: 8) {
             Circle()
-                .fill(monitor.isRunning ? Color(red: 0.07, green: 0.55, blue: 0.38)
-                                        : Color.gray.opacity(0.4))
+                .fill(monitor.isRunning ? ThemeColor.color : Color.gray.opacity(0.4))
                 .frame(width: 10, height: 10)
             Text(statusText)
                 .font(.subheadline)
@@ -103,7 +168,7 @@ struct ContentView: View {
                     .padding(.vertical, 16)
             }
             .buttonStyle(.plain)
-            .background(Color(red: 0.07, green: 0.39, blue: 0.29))
+            .background(ThemeColor.color)
             .foregroundStyle(.white)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
@@ -116,8 +181,8 @@ struct ContentView: View {
                     .padding(.vertical, 14)
             }
             .buttonStyle(.plain)
-            .background(Color(red: 0.86, green: 0.94, blue: 0.90))
-            .foregroundStyle(Color(red: 0.07, green: 0.39, blue: 0.29))
+            .background(ThemeColor.container)
+            .foregroundStyle(ThemeColor.deep)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             Button {
@@ -129,8 +194,8 @@ struct ContentView: View {
                     .padding(.vertical, 12)
             }
             .buttonStyle(.plain)
-            .background(Color(red: 0.93, green: 0.96, blue: 0.95))
-            .foregroundStyle(Color(red: 0.07, green: 0.39, blue: 0.29))
+            .background(ThemeColor.surface)
+            .foregroundStyle(ThemeColor.deep)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }

@@ -2,6 +2,9 @@
 
 一个 Windows 后台护眼提醒程序（A background eye-care reminder for Windows）。
 
+官网（Official site）：**https://eyeguard-app.app.workbuddy.host** —— 支持中英切换与主题色实时预览。
+（The official site supports language switching and a live theme-colour preview.）
+
 开机静默自启，用摄像头本地判断你是否在看屏幕；连续注视满 30 分钟，强制弹出全屏「Aerial 风格」绿植实拍休息屏，并用人声提醒你休息。
 （Starts silently at boot, detects whether you are looking at the screen via webcam; after 30 minutes of continuous viewing it forces a full-screen Aerial-style nature break screen with a spoken reminder.）
 
@@ -26,9 +29,38 @@
 - 摄像头监测（Webcam monitoring）：本地人脸检测，离开屏幕即暂停计时，回来继续；画面不外传、不保存。
 - 强制休息屏（Forced break screen）：全屏播放实拍绿植 / 航拍视频，20 秒倒计时，Aerial 屏保风格。
 - 自然语音（Natural voice）：预生成神经网络语音，不是系统机械朗读音；离线播放，无需联网。
+- 主题色自定义（Theme colour）：10 套预设配色 + 自由取色，托盘 / 设置页 / 休息屏全部跟随；桌面端图标颜色也会跟着变。
 - 双语支持（Bilingual）：中英文界面与语音一键切换，选择会被记住。
 - 静默运行（Runs silently）：无窗口、无任务栏图标，只在托盘区显示一个绿色圆点。
 - 开机自启（Auto-start）：写入注册表自启项，重启后仍然生效。
+
+## 主题色（Theme colour）
+
+所有平台共享同一套色板（All platforms share the same palette）：
+
+| 名称（Name） | 色值（Hex） |
+|---|---|
+| 森林绿（Forest，默认） | #12644A |
+| 青竹（Bamboo） | #2E7D5B |
+| 松石青（Teal） | #0E6B6B |
+| 远山蓝（Azure） | #2A5CAA |
+| 靛蓝（Indigo） | #4B3FA8 |
+| 葡萄紫（Grape） | #7A3E9D |
+| 玫瑰红（Rose） | #A63B63 |
+| 暖橙（Amber） | #B85C1E |
+| 琥珀黄（Ochre） | #A8791B |
+| 石墨灰（Graphite） | #3C4744 |
+
+- Android：设置页「主题色」按钮，预设色块 + RGB 滑杆自定义取色。
+- iOS / iPadOS：设置页预设色板 + 系统原生取色器（ColorPicker）。
+- Windows / Linux / macOS：托盘「主题色」子菜单，10 个预设 + 「自定义颜色…」弹系统取色器；托盘图标与休息屏倒计时颜色跟随主题。
+- 也可直接改 config.json 里的 theme_color（如 #2A5CAA）。
+
+## 官网与品牌素材（Site & brand assets）
+
+- 官网源码（Site source）：site/index.html，纯静态单页，含主题色演示。
+- 图标生成器（Icon generator）：tools/make_icons.py，改配色或图形后运行一次即可重出全平台图标、启动页 logo、商店特性图。
+- 商店文案（Store listings）：store/google-play.md、store/app-store.md，中英双语；隐私政策在 store/privacy-policy.md。
 
 ## 语音音色（Voice）
 
@@ -81,6 +113,7 @@
 | break_sec | 休息时长秒数（break length in seconds） | 20 |
 | use_camera | 是否启用摄像头（enable webcam detection） | true |
 | lang | 语言（language）：zh / en | zh |
+| theme_color | 主题色（theme colour，#RRGGBB） | #12644A |
 
 ## 隐私（Privacy）
 

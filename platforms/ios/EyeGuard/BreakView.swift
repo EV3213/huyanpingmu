@@ -38,12 +38,12 @@ struct BreakView: View {
                 if done {
                     Text(L.t(L.breakDone))
                         .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(Color(red: 0.73, green: 0.95, blue: 0.85))
+                        .foregroundStyle(Color(uiColor: ThemeColor.mix(ThemeColor.primary, .white, 0.55)))
                         .padding(.top, 16)
                 } else {
                     Text(L.t(L.breakCount) + "\(left)" + L.t(L.breakSeconds))
                         .font(.system(size: 20))
-                        .foregroundStyle(Color(red: 0.62, green: 0.83, blue: 0.75))
+                        .foregroundStyle(Color(uiColor: ThemeColor.mix(ThemeColor.primary, .white, 0.62)))
                         .padding(.top, 16)
                 }
                 Spacer()
@@ -64,8 +64,8 @@ struct BreakView: View {
                 .ignoresSafeArea()
         } else {
             LinearGradient(
-                colors: [Color(red: 0.04, green: 0.16, blue: 0.12),
-                         Color(red: 0.07, green: 0.34, blue: 0.25)],
+                colors: [Color(uiColor: ThemeColor.shade(ThemeColor.primary, 0.45)),
+                         Color(uiColor: ThemeColor.shade(ThemeColor.primary, 0.85))],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             )
             .ignoresSafeArea()

@@ -60,6 +60,16 @@
   const breakSec = parseInt(q.get('break') || '20', 10);
   const lang = q.get('lang') === 'en' ? 'en' : 'zh';
 
+  // 主题色：倒计时与完成提示用主题色的亮色变体
+  const themeRaw = (q.get('theme') || '').replace(/[^0-9a-fA-F]/g, '');
+  const themeHex = /^[0-9a-fA-F]{6}$/.test(themeRaw) ? themeRaw : '12644A';
+  const lighten = (hex, f) => {
+    const n = parseInt(hex, 16);
+    const m = v => Math.round(v + (255 - v) * f);
+    return 'rgb(' + m((n >> 16) & 255) + ',' + m((n >> 8) & 255) + ',' + m(n & 255) + ')';
+  };
+  const accent = lighten(themeHex, 0.55);
+
   const T = {
     zh: {
       big: '休息一下',
@@ -88,6 +98,8 @@
   document.getElementById('countLabel').textContent = T.countLabel;
   document.getElementById('unitLabel').textContent = T.unit;
   document.getElementById('done').textContent = T.done;
+  document.getElementById('count').style.color = accent;
+  document.getElementById('done').style.color = lighten(themeHex, 0.72);
   document.title = T.big;
 
   // 随机选一段实拍绿植视频
