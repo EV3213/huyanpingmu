@@ -4,3 +4,5 @@ __pycache__/
 # 签名密钥不进仓库
 *.jks
 *.keystore
+dist/*.aab
+dist/*.apk

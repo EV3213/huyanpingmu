@@ -1,12 +1,40 @@
 # 护眼管家（EyeGuard）
 
-一个 Windows 后台护眼提醒程序（A background eye-care reminder for Windows）。
+**一句话：一个真的「管得住」的多平台护眼提醒工具。**
+（In one line: a cross-platform eye-care reminder that actually holds you to it.）
 
 官网（Official site）：**https://eyeguard-app.app.workbuddy.host** —— 支持中英切换与主题色实时预览。
 （The official site supports language switching and a live theme-colour preview.）
 
 开机静默自启，用摄像头本地判断你是否在看屏幕；连续注视满 30 分钟，强制弹出全屏「Aerial 风格」绿植实拍休息屏，并用人声提醒你休息。
 （Starts silently at boot, detects whether you are looking at the screen via webcam; after 30 minutes of continuous viewing it forces a full-screen Aerial-style nature break screen with a spoken reminder.）
+
+---
+
+## 简介（Introduction）
+
+大多数护眼软件活不过三天，原因很简单：它们弹出来的东西太好关了。一条右上角的小通知、一次可以随手点掉的弹窗，你眼睛都不用离开代码，手指就已经把它关掉了。护眼管家想解决的就是这个「知道了但做不到」的问题。
+
+（Most eye-care apps do not survive three days, for one simple reason: what they show you is too easy to dismiss. A tiny notification in the corner, a popup you can close without moving your eyes. EyeGuard targets exactly that gap between knowing and doing.）
+
+它的做法是把「提醒」变成「接管」。程序先用摄像头在本地做一次人脸检测，确认你确实坐在这块屏幕前，才开始计时；你起身倒水、转头接电话，计时会自动暂停，回来再接着算。连续注视累计满 30 分钟，整块屏幕被一段实拍绿植或航拍画面接管，倒计时从 20 秒开始，同时一句自然的神经网络语音响起来——不是系统那种一个字一个字往外蹦的机械朗读。这段时间里你没法一边「休息」一边刷消息，因为屏幕不在你手上。
+
+（EyeGuard turns a reminder into a takeover. A local face detection pass first confirms you are really sitting at this screen, and only then does the clock start. Stand up for water, turn away for a call, and the timer pauses itself, resuming when you are back. After 30 minutes of accumulated viewing, the whole display is taken over by real footage of plants or an aerial landscape, a 20-second countdown begins, and a natural neural-network voice speaks up — not the word-by-word robotic reading of a system voice. During those seconds you cannot "rest" while scrolling, because the screen is not yours.）
+
+整个程序只做了三件不妥协的事：
+
+- **不外传（Nothing leaves the machine）** —— 摄像头画面全部在本机内存里处理，不联网、不落盘、不上传，代码可查。
+- **不打扰（Silent until it matters）** —— 没有窗口、没有任务栏图标，平时只在托盘区留一个绿色小圆点；不想被管的时候，右键就能暂停监控。
+- **不将就（Looks like something you keep）** —— 休息屏是真拍的绿植和航拍素材，语音是预生成的神经语音，十套主题色随意换，连托盘图标的颜色都跟着变。
+
+（Three non-negotiables: frames never leave the machine; it stays invisible until it actually matters; and it looks good enough that you will not uninstall it.）
+
+**适合谁（Who it is for）**：每天在屏幕前坐八小时以上的开发者、设计师、写作者、学生，以及那些装过三四个护眼插件、最后都被自己关掉的人。也适合装在家人的电脑上——它不啰嗦，到点才说话。
+
+（For anyone who spends eight hours a day in front of a screen — developers, designers, writers, students — and for everyone who has installed three or four eye-care extensions and dismissed them all. It also works well on a family member's machine: it says nothing until it is time.）
+
+**现在支持（What it runs on）**：Windows、Linux、macOS、Android、iOS、iPadOS 六个平台，同一套色板、同一套语音、同一套交互逻辑。
+（Six platforms — Windows, Linux, macOS, Android, iOS, iPadOS — sharing one palette, one voice set, one interaction model.）
 
 ---
 
