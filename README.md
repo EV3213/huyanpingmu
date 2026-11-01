@@ -52,6 +52,8 @@
 
 每端都有独立 README，含安装/构建步骤和平台限制（Each platform ships its own README）.
 
+**Android 手机直接装（Install on Android right away）**：下载 [apk/护眼管家-1.0.apk](platforms/android/apk/护眼管家-1.0.apk)（43 MB，正式签名，v2 签名，最低 Android 8.0），传到手机点开即可安装，不需要 Android Studio、不需要 Google 服务。首次安装需在系统里允许「安装未知应用」。
+
 ## 功能（Features）
 
 - 摄像头监测（Webcam monitoring）：本地人脸检测，离开屏幕即暂停计时，回来继续；画面不外传、不保存。
