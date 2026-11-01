@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.EyeGuard" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#12644A</item>
+        <item name="colorPrimaryVariant">#0E4C38</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="android:windowBackground">#F6FAF8</item>
+        <item name="android:statusBarColor">#F6FAF8</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.EyeGuard.Break" parent="Theme.EyeGuard">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">#0B1F19</item>
+        <item name="android:statusBarColor">#000000</item>
+        <item name="android:navigationBarColor">#000000</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

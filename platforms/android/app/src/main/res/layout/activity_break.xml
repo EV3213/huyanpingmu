@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0B1F19">
+
+    <VideoView
+        android:id="@+id/breakVideo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp">
+
+        <TextView
+            android:id="@+id/breakTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="休息一下"
+            android:textColor="#FFFFFF"
+            android:textSize="40sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/breakTip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center"
+            android:lineSpacingExtra="6dp"
+            android:text="请离开屏幕，望向 6 米以外的远处"
+            android:textColor="#CFE9DD"
+            android:textSize="17sp" />
+
+        <TextView
+            android:id="@+id/breakCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="34dp"
+            android:text="休息倒计时 20 秒"
+            android:textColor="#9FD3BE"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/breakDone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="34dp"
+            android:text="✨ 休息完成，马上回到工作"
+            android:textColor="#B9F3D8"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+    </LinearLayout>
+</FrameLayout>

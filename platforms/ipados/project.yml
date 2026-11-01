@@ -1,0 +1,43 @@
+name: EyeGuardHD
+options:
+  bundleIdPrefix: com.eyeguard
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  EyeGuard:
+    type: application
+    platform: iOS
+    sources:
+      - path: EyeGuard
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.eyeguard.app.ipad
+        TARGETED_DEVICE_FAMILY: "2"          # iPad only
+        INFOPLIST_FILE: EyeGuard/Info.plist
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+    info:
+      path: EyeGuard/Info.plist
+      properties:
+        CFBundleDisplayName: 护眼管家 HD
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSCameraUsageDescription: 用前置摄像头在本机判断你是否在看屏幕，画面不会保存或上传。
+        UIRequiredDeviceCapabilities:
+          - armv7

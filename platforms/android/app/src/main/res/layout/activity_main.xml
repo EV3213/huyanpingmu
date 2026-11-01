@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F6FAF8"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:id="@+id/titleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="护眼管家"
+            android:textColor="#12644A"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/subtitleText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="看屏幕久了，强制休息一下"
+            android:textColor="#5C7A6E"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/intervalLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="注视 30 分钟后休息"
+            android:textColor="#1B2B24"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/intervalSeek"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/breakLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="每次休息 20 秒"
+            android:textColor="#1B2B24"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/breakSeek"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+        <Switch
+            android:id="@+id/cameraSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:checked="true"
+            android:text="摄像头检测（本地，不上传）"
+            android:textColor="#1B2B24"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="已停止"
+            android:textColor="#5C7A6E"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/startButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="22dp"
+            android:backgroundTint="#12644A"
+            android:text="开始监控"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/restButton"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="#DCEFE6"
+            android:text="立即休息一次"
+            android:textColor="#12644A"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/langButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="#EEF6F2"
+            android:text="语言：中文"
+            android:textColor="#12644A"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="摄像头画面只在本机处理，不联网、不保存、不上传。"
+            android:textColor="#8AA398"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>

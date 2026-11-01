@@ -7,6 +7,20 @@
 
 ---
 
+## 各平台版本（Platforms）
+
+| 平台（Platform） | 目录（Folder） | 技术（Stack） | 状态（Status） |
+|---|---|---|---|
+| Windows | platforms/windows | Python + Chrome kiosk | 已发布（released） |
+| Linux | platforms/linux | Python + 浏览器 kiosk / Tk | 可直接安装（installable） |
+| macOS | platforms/macos | Python + LaunchAgent | 可直接安装（installable） |
+| Android | platforms/android | Kotlin + CameraX + ML Kit | 需 Android Studio 构建 |
+| iOS | platforms/ios | SwiftUI + Vision | 需 Xcode 构建 |
+| iPadOS | platforms/ipados | SwiftUI + Vision（大屏适配） | 需 Xcode 构建 |
+| 共享素材 | platforms/assets | 视频 / 海报图 | — |
+
+每端都有独立 README，含安装/构建步骤和平台限制（Each platform ships its own README）.
+
 ## 功能（Features）
 
 - 摄像头监测（Webcam monitoring）：本地人脸检测，离开屏幕即暂停计时，回来继续；画面不外传、不保存。
