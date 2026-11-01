@@ -137,7 +137,22 @@
 - 试听（Listen）：也可以在「语音（Voice）」文件夹里直接点开中文命名的副本试听。
 - 重新生成（Regenerate）：编辑 make_voice.py 里的台词与音色，联网运行一次 python make_voice.py（需先安装 edge-tts）。
 
+## 版本与更新（Version & updates）
+
+| 版本（Version） | 主要变化（Highlights） |
+|---|---|
+| 1.1 | 场景识别：学习软件延后休息、娱乐网页 25 分钟、普通软件 30 分钟可调；托盘菜单显示版本号 |
+| 1.0 | 首个全平台版本：六端源码、10 套主题色 + 自定义取色、神经语音、官网与商店素材 |
+
+- 最新版下载（Latest）：https://github.com/EV3213/huyanpingmu/releases/latest
+- 版本号位置（Where to look）：托盘菜单最下面一行「护眼管家 v1.1」，鼠标悬停托盘图标的提示里也有。
+- 仓库更新是自动推送的（Auto-push）：装一次 `python tools/autopush.py install` 之后，每次 git commit 会立刻 push 到 GitHub，推送结果记录在 .git/autopush.log。`status` 查看、`remove` 卸载。
+
 ## 安装（Install）
+
+**Windows 推荐走这一步（Recommended）**：到 [Releases](https://github.com/EV3213/huyanpingmu/releases/latest) 下载 **EyeGuard-1.1-windows.zip**，解压到任意文件夹，双击里面的「安装到本机.bat」。也可以直接用仓库里的 [platforms/windows](platforms/windows) 文件夹，内容完全一样。
+
+（Download the zip from Releases, unzip anywhere, run the installer bat inside. The folder in the repo is identical.）
 
 1. 双击「安装到本机.bat」，按提示选择 1（中文）或 2（English）。
    （Double-click the installer bat file and choose 1 for Chinese or 2 for English.）
@@ -145,6 +160,7 @@
    （Auto-start is registered; it will run from the next boot.）
 3. 想立刻启动（To start now）：双击桌面上的「护眼管家.bat」。
    （Do NOT double-click EyeGuard.pyw directly — .pyw has no file association on most systems.）
+4. **确认自己装的是哪一版（Check your version）**：托盘图标右键，菜单最下面一行写着「护眼管家 v1.1」；鼠标悬停在托盘图标上，提示里也有版本号。菜单里如果**没有「主题色」这一项**，说明装的是 1.0 之前的旧包，删掉重新下载即可。
 
 ## 使用（Usage）
 

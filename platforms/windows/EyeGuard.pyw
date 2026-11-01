@@ -93,6 +93,7 @@ THEME_PRESETS = [
     ("石墨灰", "Graphite", "#3C4744"),
 ]
 DEFAULT_THEME = "#12644A"
+APP_VERSION = "1.1"
 
 # ---------- 前台窗口 / 全屏场景识别 ----------
 # 学习类程序（按进程名匹配，配置里 study_apps 可覆盖）
@@ -433,9 +434,9 @@ class EyeGuard:
             label = "学习中 · 待休息" if self.cfg.get("lang", "zh") == "zh" \
                 else "studying · break pending"
         try:
-            self.icon.title = "%s · %s %d%s" % (
+            self.icon.title = "%s · %s %d%s · v%s" % (
                 self.tr("tray_title"), label, self.required_seconds() // 60,
-                self.tr("minutes"))
+                self.tr("minutes"), APP_VERSION)
         except Exception:
             pass
 
@@ -644,6 +645,9 @@ class EyeGuard:
                               TrayItem(lambda item: self.tr("theme_custom"),
                                        action=custom_color))),
             TrayItem(lambda item: self.tr("exit"), action=lambda i, it: self.quit(i)),
+            TrayMenu.SEPARATOR,
+            TrayItem(lambda item: "%s v%s" % (self.tr("tray_title"), APP_VERSION),
+                     action=None),
         )
         self.icon = pystray.Icon("EyeGuard", self._tray_image(),
                                  self.tr("tray_title"), menu)
