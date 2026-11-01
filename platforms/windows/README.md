@@ -24,6 +24,22 @@ Windows 端成品，双击即用（Ready to run on Windows）。
 3. 之后开机自启；托盘绿色圆点右键可暂停 / 立即休息 / 切语言 / 退出。
    （Auto-starts at boot; right-click the green tray dot for options.）
 
+## 场景识别（Scene detection）
+
+程序每秒读一次前台窗口，按正在用的东西决定时长：
+
+| 场景（Scene） | 规则（Rule） |
+|---|---|
+| 普通软件（Normal app） | 普通时长，默认 30 分钟（托盘「普通时长」可改） |
+| 工作网页（Work page） | 同普通时长 |
+| 娱乐网页（Entertainment） | 25 分钟（托盘「娱乐时长」可改，15–45） |
+| 学习软件（Study） | 到点不打断，退出学习软件后立刻播休息屏；最长延后 30 分钟可调 |
+
+- 学习类默认认这些进程 / 标题：anki、学习通、超星、中国大学 MOOC、Coursera、可汗学院、网易公开课、腾讯课堂、智慧树、学堂在线；可在 config.json 的 study_apps 里加自己的。
+- 娱乐类按标题认：哔哩哔哩 / B 站 / YouTube / 抖音 / 爱奇艺 / 优酷 / 腾讯视频 / Netflix / 虎牙 / 斗鱼 / 网易云音乐等。
+- 想关掉整个功能：托盘菜单里取消勾选「识别全屏场景」，或把 config.json 的 smart_scene 设为 false。
+- 只读窗口标题和进程名，不读页面内容、不联网。
+
 ## 依赖（Requirements）
 
 - Windows 10 / 11

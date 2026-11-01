@@ -2,5 +2,9 @@
   "interval_min": 30,
   "break_sec": 20,
   "use_camera": true,
-  "lang": "zh"
+  "lang": "zh",
+  "theme_color": "#12644A",
+  "smart_scene": true,
+  "entertainment_min": 25,
+  "study_max_wait_min": 30
 }

@@ -6,6 +6,7 @@
 - 休息屏：Chrome Kiosk 全屏（覆盖任务栏）+ Aerial 风格实拍绿植视频 + 语音播报"休息一下"
 """
 import os
+import re
 import sys
 import json
 import time
@@ -50,6 +51,12 @@ I18N = {
         "language": "语言 / Language：中文",
         "theme": "主题色",
         "theme_custom": "自定义颜色…",
+        "interval": "普通时长",
+        "entertainment": "娱乐时长（视频网页）",
+        "smart": "识别全屏场景",
+        "study_wait": "学习时最多延后",
+        "no_limit": "不限制（等退出）",
+        "minutes": " 分钟",
         "speak_rest": "休息一下，离开屏幕，看看远处，让眼睛放松一下吧",
         "speak_done": "休息完成，欢迎回来",
     },
@@ -61,6 +68,12 @@ I18N = {
         "language": "Language / 语言：English",
         "theme": "Theme color",
         "theme_custom": "Custom color…",
+        "interval": "Normal interval",
+        "entertainment": "Entertainment interval (video)",
+        "smart": "Detect fullscreen app",
+        "study_wait": "Max delay while studying",
+        "no_limit": "No limit (wait for exit)",
+        "minutes": " min",
         "speak_rest": "Time for a break. Please look away from the screen and relax your eyes.",
         "speak_done": "Break finished. Welcome back.",
     },
@@ -80,6 +93,142 @@ THEME_PRESETS = [
     ("石墨灰", "Graphite", "#3C4744"),
 ]
 DEFAULT_THEME = "#12644A"
+
+# ---------- 前台窗口 / 全屏场景识别 ----------
+# 学习类程序（按进程名匹配，配置里 study_apps 可覆盖）
+SMART_DEFAULT_STUDY_APPS = [
+    "anki.exe", "xuexitong.exe", "chaoxing.exe", "mooc.exe", "coursera.exe",
+    "duolingo.exe", "tencentclass.exe", "khanacademy.exe", "notability.exe",
+    "chaoxing", "xuexitong",
+]
+# 浏览器里按标题判断：先学习，再娱乐，其余一律按工作（用普通时长）
+SMART_STUDY_HINTS = [
+    "学习通", "超星", "中国大学mooc", "mooc", "coursera", "可汗学院", "khan academy",
+    "网易公开课", "腾讯课堂", "智慧树", "学堂在线", "anki", "备考",
+    "course", "lecture", "课件", "网课",
+]
+SMART_ENTERTAINMENT_HINTS = [
+    "哔哩哔哩", "bilibili", "b站", "youtube", "抖音", "douyin", "tiktok",
+    "爱奇艺", "iqiyi", "优酷", "youku", "腾讯视频", "v.qq.com", "芒果", "mgtv",
+    "netflix", "twitch", "斗鱼", "douyu", "虎牙", "huya", "西瓜视频",
+    "网易云音乐", "music.163.com", "qq音乐", "y.qq.com", "咪咕", "快手", "kuaishou",
+    "微博", "weibo", "小红书", "xiaohongshu", "搜狐视频", "acfun", "niconico",
+]
+SMART_WORK_HINTS = [
+    "github", "gitlab", "gitee", "jira", "confluence", "notion", "飞书", "feishu",
+    "lark", "腾讯文档", "docs.qq.com", "石墨", "shimo", "语雀", "yuque",
+    "stack overflow", "stackoverflow", "掘金", "juejin", "csdn", "博客园", "cnblogs",
+    "developer.mozilla", "mdn", "docs.google", "learn.microsoft", "docs.python",
+    "w3school", "菜鸟教程", "runoob", "知网", "cnki", "arxiv", "ieee", "springer",
+    "outlook", "gmail", "邮箱", "mail", "excel", "word", "powerpoint", "wps",
+]
+BROWSER_EXES = {
+    "chrome.exe", "msedge.exe", "firefox.exe", "brave.exe", "opera.exe",
+    "vivaldi.exe", "360se.exe", "360chrome.exe", "qqbrowser.exe", "sogouexplorer.exe",
+}
+
+
+class _RECT(ctypes.Structure):
+    _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+
+
+class _MONITORINFO(ctypes.Structure):
+    _fields_ = [("cbSize", ctypes.c_ulong), ("rcMonitor", _RECT),
+                ("rcWork", _RECT), ("dwFlags", ctypes.c_ulong)]
+
+
+def _window_process_name(hwnd):
+    """取窗口所属进程的可执行文件名"""
+    try:
+        pid = ctypes.c_ulong()
+        ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if not pid.value:
+            return ""
+        handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid.value)
+        if not handle:
+            return ""
+        try:
+            buf = ctypes.create_unicode_buffer(1024)
+            size = ctypes.c_ulong(1024)
+            if ctypes.windll.kernel32.QueryFullProcessImageNameW(
+                    handle, 0, buf, ctypes.byref(size)):
+                return os.path.basename(buf.value).lower()
+        finally:
+            ctypes.windll.kernel32.CloseHandle(handle)
+    except Exception:
+        pass
+    return ""
+
+
+def get_foreground_info():
+    """当前前台窗口：{exe, title, fullscreen}；失败返回 None"""
+    try:
+        u = ctypes.windll.user32
+        hwnd = u.GetForegroundWindow()
+        if not hwnd:
+            return None
+        n = u.GetWindowTextLengthW(hwnd)
+        buf = ctypes.create_unicode_buffer(n + 1)
+        u.GetWindowTextW(hwnd, buf, n + 1)
+        rect = _RECT()
+        u.GetWindowRect(hwnd, ctypes.byref(rect))
+        full = False
+        mi = _MONITORINFO()
+        mi.cbSize = ctypes.sizeof(_MONITORINFO)
+        mon = u.MonitorFromWindow(hwnd, 2)  # MONITOR_DEFAULTTONEAREST
+        if mon and u.GetMonitorInfoW(mon, ctypes.byref(mi)):
+            mw = mi.rcMonitor.right - mi.rcMonitor.left
+            mh = mi.rcMonitor.bottom - mi.rcMonitor.top
+            ww = rect.right - rect.left
+            wh = rect.bottom - rect.top
+            full = ww >= mw - 4 and wh >= mh - 4
+        return {"exe": _window_process_name(hwnd),
+                "title": buf.value or "",
+                "fullscreen": full}
+    except Exception:
+        return None
+
+
+def _hit(text, keywords):
+    """关键词命中：中文按包含匹配，英文要求整词边界
+    （否则 huya 会命中 huyanpingmu 这类无关文字）"""
+    if not text:
+        return False
+    for kw in keywords:
+        k = str(kw).lower().strip()
+        if not k:
+            continue
+        try:
+            k.encode("ascii")
+            if re.search(r"(?<![a-z0-9])" + re.escape(k) + r"(?![a-z0-9])", text):
+                return True
+        except UnicodeEncodeError:
+            if k in text:
+                return True
+    return False
+
+
+def classify_scene(info, cfg):
+    """归类：study（学习）/ entertainment（娱乐）/ work（工作）/ normal（普通）"""
+    if not info:
+        return "normal"
+    exe = (info.get("exe") or "").lower()
+    title = (info.get("title") or "").lower()
+    study_apps = cfg.get("study_apps")
+    if not isinstance(study_apps, list) or not study_apps:
+        study_apps = SMART_DEFAULT_STUDY_APPS
+    if _hit(exe, study_apps) or _hit(title, study_apps):
+        return "study"
+    is_browser = exe in BROWSER_EXES or any(b in exe for b in ("chrome", "edge", "firefox"))
+    if is_browser:
+        if _hit(title, SMART_STUDY_HINTS):
+            return "study"
+        if _hit(title, SMART_ENTERTAINMENT_HINTS):
+            return "entertainment"
+        # 浏览器里的其它内容（含各类工作站点）一律按普通时长
+        return "work"
+    return "normal"
 
 
 def normalize_theme(value):
@@ -103,7 +252,10 @@ def save_config(cfg):
 
 def load_config():
     cfg = {"interval_min": 30, "break_sec": 20, "use_camera": True,
-           "lang": "zh", "theme_color": DEFAULT_THEME}
+           "lang": "zh", "theme_color": DEFAULT_THEME,
+           "smart_scene": True, "entertainment_min": 25,
+           "study_max_wait_min": 30,
+           "study_apps": list(SMART_DEFAULT_STUDY_APPS)}
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
             cfg.update(json.load(f))
@@ -112,6 +264,18 @@ def load_config():
     if cfg.get("lang") not in I18N:
         cfg["lang"] = "zh"
     cfg["theme_color"] = normalize_theme(cfg.get("theme_color"))
+    for key, default in (("interval_min", 30), ("entertainment_min", 25),
+                         ("break_sec", 20)):
+        try:
+            val = int(cfg.get(key, default))
+            cfg[key] = val if val > 0 else default
+        except (TypeError, ValueError):
+            cfg[key] = default
+    try:
+        wait = int(cfg.get("study_max_wait_min", 30))
+    except (TypeError, ValueError):
+        wait = 30
+    cfg["study_max_wait_min"] = wait if wait >= 0 else 30
     return cfg
 
 
@@ -215,28 +379,130 @@ class EyeGuard:
         self.watched = 0
         self.paused = False
         self.rest_active = False
+        self.scene = {"exe": "", "title": "", "fullscreen": False}
+        self.scene_kind = "normal"     # study / entertainment / work / normal
+        self.pending = False           # 到点了但在等学习软件退出
+        self.pending_since = 0.0
+        self.away_since = 0.0
         self.cam = CameraMonitor()
         if self.cfg.get("use_camera", True):
             self.cam.start()
         self._build_tray()
 
     # ---------- 计时线程 ----------
+    def required_seconds(self):
+        """当前场景要求的注视时长：娱乐 25 分钟，其余用普通设置"""
+        if self.cfg.get("smart_scene", True) and self.scene_kind == "entertainment":
+            return max(1, int(self.cfg.get("entertainment_min", 25))) * 60
+        return max(1, int(self.cfg.get("interval_min", 30))) * 60
+
+    def pending_limit(self):
+        """学习中最多再延后多久；0 表示不限制（一直等到学习软件退出）"""
+        try:
+            mins = int(self.cfg.get("study_max_wait_min", 30))
+        except (TypeError, ValueError):
+            mins = 30
+        return mins * 60 if mins > 0 else 0
+
+    def _refresh_scene(self):
+        """每秒采样一次前台窗口，识别正在全屏的应用/网页类型"""
+        if not self.cfg.get("smart_scene", True):
+            self.scene_kind = "normal"
+            return
+        info = get_foreground_info()
+        if not info:
+            self.scene_kind = "normal"
+            return
+        kind = classify_scene(info, self.cfg)
+        changed = kind != self.scene_kind
+        self.scene = info
+        self.scene_kind = kind
+        if changed:
+            logging.info("scene -> %s (%s | %s | fullscreen=%s)", kind,
+                         info.get("exe"), (info.get("title") or "")[:60],
+                         info.get("fullscreen"))
+            self._update_tooltip()
+
+    def _update_tooltip(self):
+        label = {"study": "学习中", "entertainment": "娱乐中",
+                 "work": "工作中", "normal": "普通"}.get(self.scene_kind, "")
+        if self.cfg.get("lang", "zh") == "en":
+            label = {"study": "studying", "entertainment": "watching",
+                     "work": "working", "normal": "normal"}.get(self.scene_kind, "")
+        if self.pending:
+            label = "学习中 · 待休息" if self.cfg.get("lang", "zh") == "zh" \
+                else "studying · break pending"
+        try:
+            self.icon.title = "%s · %s %d%s" % (
+                self.tr("tray_title"), label, self.required_seconds() // 60,
+                self.tr("minutes"))
+        except Exception:
+            pass
+
     def _timer_loop(self):
         while True:
             time.sleep(1)
-            if self.paused or self.rest_active:
-                continue
-            watching = True
-            if self.cam.camera_ok:
-                away = (not self.cam.face_seen) and \
-                       (time.time() - self.cam.face_lost_at > 10)
-                watching = not away
-            if watching:
-                self.watched += 1
-                if self.watched >= self.interval_sec:
-                    self.start_rest()
+            try:
+                self._refresh_scene()
+            except Exception as e:
+                logging.debug("scene refresh failed: %s", e)
+            try:
+                self._tick(time.time())
+            except Exception as e:
+                logging.warning("tick failed: %s", e)
+
+    def _tick(self, now):
+        """每秒一次的心跳：累加注视时长，按场景决定是否进入休息"""
+        if self.paused or self.rest_active:
+            return
+        watching = True
+        if self.cam.camera_ok:
+            away = (not self.cam.face_seen) and \
+                   (now - self.cam.face_lost_at > 10)
+            watching = not away
+        if not watching:
+            if self.pending:
+                # 学习途中起身接杯水不该丢掉待播的休息；离开超过 3 分钟
+                # 说明已经真的歇过了，才把待播状态清掉
+                if not self.away_since:
+                    self.away_since = now
+                elif now - self.away_since > 180:
+                    logging.info("away >3min while break was pending, dropped")
+                    self.pending = False
+                    self.watched = 0
+                    self.away_since = 0.0
             else:
                 self.watched = 0
+                self.away_since = 0.0
+            return
+        self.away_since = 0.0
+        self.watched += 1
+        # 已经到点、正在学习：等学习软件退出，一退出就立刻播放休息屏
+        if self.pending:
+            waited = now - self.pending_since
+            limit = self.pending_limit()
+            if self.scene_kind != "study":
+                logging.info("study app left, playing deferred break "
+                             "(waited %ss, watched %ss)",
+                             int(waited), self.watched)
+                self.pending = False
+                self.start_rest()
+            elif limit and waited >= limit:
+                logging.info("studied %ss past threshold, forcing break",
+                             int(waited))
+                self.pending = False
+                self.start_rest()
+            return
+        if self.watched >= self.required_seconds():
+            if self.scene_kind == "study":
+                self.pending = True
+                self.pending_since = now
+                logging.info("time is up but studying (%s | %s), deferred",
+                             self.scene.get("exe"),
+                             (self.scene.get("title") or "")[:50])
+                self._update_tooltip()
+            else:
+                self.start_rest()
 
     # ---------- 多语言 ----------
     def tr(self, key):
@@ -312,10 +578,66 @@ class EyeGuard:
             except Exception as e:
                 logging.warning("custom color failed: %s", e)
 
+        def make_interval_menu(key, options):
+            items = []
+            for mins in options:
+                def make_setter(_m):
+                    def set_minutes(icon=None, item=None):
+                        self.cfg[key] = _m
+                        save_config(self.cfg)
+                        logging.info("%s -> %s min", key, _m)
+                        self._update_tooltip()
+                        self._refresh_tray()
+                    return set_minutes
+                items.append(TrayItem(
+                    lambda item, _m=mins: "%d%s" % (_m, self.tr("minutes")),
+                    action=make_setter(mins),
+                    checked=lambda item, _m=mins, _k=key:
+                        int(self.cfg.get(_k, 0)) == _m,
+                    radio=True))
+            return TrayMenu(*items)
+
+        def toggle_smart(icon=None, item=None):
+            self.cfg["smart_scene"] = not self.cfg.get("smart_scene", True)
+            save_config(self.cfg)
+            logging.info("smart_scene -> %s", self.cfg["smart_scene"])
+            self._refresh_tray()
+
+        def make_wait_menu():
+            """学习场景下最多延后多久再强制休息；0 = 一直等到学习软件退出"""
+            items = []
+            for mins in (15, 30, 45, 60, 0):
+                def make_setter(_m):
+                    def set_wait(icon=None, item=None):
+                        self.cfg["study_max_wait_min"] = _m
+                        save_config(self.cfg)
+                        logging.info("study_max_wait_min -> %s", _m)
+                    return set_wait
+                items.append(TrayItem(
+                    lambda item, _m=mins: self.tr("no_limit") if _m == 0
+                    else "%d%s" % (_m, self.tr("minutes")),
+                    action=make_setter(mins),
+                    checked=lambda item, _m=mins:
+                        int(self.cfg.get("study_max_wait_min", 30)) == _m,
+                    radio=True))
+            return TrayMenu(*items)
+
         menu = TrayMenu(
             TrayItem(lambda item: self.tr("rest_now"), action=lambda i, it: self.start_rest()),
             TrayItem(lambda item: self.tr("pause"), action=toggle_pause,
                      checked=lambda item: self.paused),
+            TrayMenu.SEPARATOR,
+            TrayItem(lambda item: self.tr("interval"),
+                     TrayMenu(*make_interval_menu("interval_min",
+                                                  [15, 20, 25, 30, 45, 60]).items)),
+            TrayItem(lambda item: self.tr("entertainment"),
+                     TrayMenu(*make_interval_menu("entertainment_min",
+                                                  [15, 20, 25, 30, 45]).items)),
+            TrayItem(lambda item: self.tr("smart"), action=toggle_smart,
+                     checked=lambda item: bool(self.cfg.get("smart_scene", True))),
+            TrayItem(lambda item: self.tr("study_wait"),
+                     TrayMenu(*make_wait_menu().items)),
+            TrayMenu.SEPARATOR,
             TrayItem(lambda item: self.tr("language"), action=self.toggle_lang),
             TrayItem(lambda item: self.tr("theme"),
                      TrayMenu(*make_theme_menu(),
@@ -405,6 +727,25 @@ if __name__ == "__main__":
         print("camera_open:", g.cam.camera_ok, flush=True)
         print("browser:", find_browser(), flush=True)
         print("rest.html:", os.path.exists(REST_HTML), flush=True)
+        samples = [
+            ("chrome.exe", "哔哩哔哩 (゜-゜)つロ 干杯~ - Google Chrome", True),
+            ("msedge.exe", "中国大学MOOC(慕课)_国家精品课程在线学习平台 - Microsoft Edge", True),
+            ("msedge.exe", "GitHub - EV3213/huyanpingmu - Microsoft Edge", True),
+            ("anki.exe", "Anki", True),
+            ("notepad.exe", "无标题 - 记事本", False),
+        ]
+        for exe, title, full in samples:
+            print("scene %-14s %-44s -> %s" % (
+                exe, title[:42],
+                classify_scene({"exe": exe, "title": title,
+                                "fullscreen": full}, g.cfg)), flush=True)
         g.quit()
+    elif "--probe" in sys.argv:
+        # 实时打印前台窗口与判定结果，用于核对识别是否准确
+        cfg = load_config()
+        for i in range(20):
+            info = get_foreground_info()
+            print("%2ds %s -> %s" % (i, info, classify_scene(info, cfg)), flush=True)
+            time.sleep(1)
     else:
         EyeGuard().run()

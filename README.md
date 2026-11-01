@@ -57,12 +57,34 @@
 ## 功能（Features）
 
 - 摄像头监测（Webcam monitoring）：本地人脸检测，离开屏幕即暂停计时，回来继续；画面不外传、不保存。
+- 场景识别（Smart scene detection）：识别当前全屏在用什么程序 / 网页，学习类自动把休息推到你退出之后，娱乐视频网页提前 5 分钟提醒。见下节。
 - 强制休息屏（Forced break screen）：全屏播放实拍绿植 / 航拍视频，20 秒倒计时，Aerial 屏保风格。
 - 自然语音（Natural voice）：预生成神经网络语音，不是系统机械朗读音；离线播放，无需联网。
 - 主题色自定义（Theme colour）：10 套预设配色 + 自由取色，托盘 / 设置页 / 休息屏全部跟随；桌面端图标颜色也会跟着变。
 - 双语支持（Bilingual）：中英文界面与语音一键切换，选择会被记住。
 - 静默运行（Runs silently）：无窗口、无任务栏图标，只在托盘区显示一个绿色圆点。
 - 开机自启（Auto-start）：写入注册表自启项，重启后仍然生效。
+
+## 场景识别（Smart scene detection）
+
+程序每秒读一次前台窗口（Windows 端已实现），按「你在干什么」决定什么时候该休息。
+
+（Every second the Windows build reads the foreground window and decides when to intervene.）
+
+| 场景（Scene） | 判定依据（How it is detected） | 计时规则（Rule） |
+|---|---|---|
+| 普通软件（Normal app） | 其它任何程序 | 按普通时长，默认 30 分钟，可在托盘自定义 |
+| 工作网页（Work page） | Chrome / Edge 等浏览器里除下面两类之外的页面 | 同普通时长 |
+| 娱乐网页（Entertainment） | 标题命中哔哩哔哩、B 站、YouTube、抖音、爱奇艺、优酷、腾讯视频、Netflix、虎牙、斗鱼、网易云音乐等 | 25 分钟（可在托盘改成 15–45） |
+| 学习软件（Study） | 进程或标题命中 Anki、学习通、超星、中国大学 MOOC、Coursera、可汗学院、网易公开课、腾讯课堂、智慧树、学堂在线等 | 到点先不打断，**等你退出学习软件后立刻播放休息屏** |
+
+几个细节（Details）：
+
+- 学习场景的等待有上限（默认 30 分钟），到点还没退出就会强制休息一次——否则连续学一整天等于没有休息。可在托盘「学习时最多延后」里改成 15 / 30 / 45 / 60 分钟，或选「不限制（等退出）」。
+- 学习途中起身接水不算「退出」：只要 3 分钟内回来，休息屏仍然待播；离开超过 3 分钟则视为已经歇过，重新计时。
+- 浏览器靠标签页标题判断，所以标题里没写站点名的页面会被当成工作网页（用普通时长）。想加自己的站点，改 EyeGuard.pyw 顶部的关键词表，或直接改托盘开关关掉这个功能。
+- 判定不依赖网络，也不读取页面内容，只读窗口标题和进程名。（No network access; only the window title and process name are read.）
+- 目前只有 Windows 端做了场景识别；Linux / macOS 用各自的窗口查询接口（xdotool / AppleScript），Android 需要无障碍服务，iOS 根本无法读取别的 App，这三端暂时只有固定时长。
 
 ## 主题色（Theme colour）
 
@@ -130,6 +152,10 @@
 
 - 立即休息（Take a break now）
 - 暂停监控（Pause / resume monitoring）
+- 普通时长（Normal interval）
+- 娱乐时长（Entertainment interval）
+- 识别全屏场景（Detect fullscreen app）开关
+- 学习时最多延后（Max delay while studying）
 - 语言 / Language（中文 / English）
 - 退出护眼管家（Exit）
 
@@ -140,6 +166,10 @@
 | 键（Key） | 说明（Description） | 默认（Default） |
 |---|---|---|
 | interval_min | 注视多久后休息（minutes of viewing before a break） | 30 |
+| entertainment_min | 娱乐网页的时长（entertainment interval） | 25 |
+| smart_scene | 是否识别全屏场景（enable scene detection） | true |
+| study_max_wait_min | 学习中最多延后多久（0 = 一直等到退出） | 30 |
+| study_apps | 自定义学习类进程名（extra study processes，数组） | 内置一张表 |
 | break_sec | 休息时长秒数（break length in seconds） | 20 |
 | use_camera | 是否启用摄像头（enable webcam detection） | true |
 | lang | 语言（language）：zh / en | zh |
