@@ -111,6 +111,10 @@ object ThemeColor {
         val ctx = activity
         val dp = ctx.resources.displayMetrics.density
         var current = primary(ctx)
+        // 滑杆要在色块回调之前声明，否则 Kotlin 编译器看不到这个引用
+        var rSeek: SeekBar? = null
+        var gSeek: SeekBar? = null
+        var bSeek: SeekBar? = null
 
         val root = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -147,9 +151,9 @@ object ThemeColor {
                             v.background = circleDrawable(parse(h), 0,
                                 ((if (h == hex) 4f else 2f) * dp).toInt(), Color.WHITE)
                         }
-                        rSeek.progress = Color.red(c)
-                        gSeek.progress = Color.green(c)
-                        bSeek.progress = Color.blue(c)
+                        rSeek?.progress = Color.red(c)
+                        gSeek?.progress = Color.green(c)
+                        bSeek?.progress = Color.blue(c)
                         onPreview(c)
                     }
                 }
@@ -181,9 +185,6 @@ object ThemeColor {
         }
         root.addView(preview)
 
-        lateinit var rSeek: SeekBar
-        lateinit var gSeek: SeekBar
-        lateinit var bSeek: SeekBar
         val sliders = listOf("R", "G", "B")
         sliders.forEachIndexed { i, label ->
             val row = LinearLayout(ctx).apply {
@@ -208,7 +209,8 @@ object ThemeColor {
             }
             seek.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(sb: SeekBar?, p: Int, fromUser: Boolean) {
-                    current = Color.rgb(rSeek.progress, gSeek.progress, bSeek.progress)
+                    current = Color.rgb(rSeek?.progress ?: 0, gSeek?.progress ?: 0,
+                        bSeek?.progress ?: 0)
                     (preview.background as GradientDrawable).setColor(current)
                     onPreview(current)
                 }

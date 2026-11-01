@@ -2,7 +2,24 @@
 
 原生 Kotlin 工程：前台服务常驻监控 + 摄像头人脸检测 + 全屏休息页（Native Kotlin）。
 
-## 构建（Build）
+## 直接安装（Install the ready-made APK）
+
+仓库里已经放好编译好的正式签名包，不用装 Android Studio：
+
+**apk/护眼管家-1.0.apk**（43 MB，包名 com.eyeguard.app，最低 Android 8.0，v2 签名）
+
+装法（任选一种）：
+
+1. **手机直接下载**：在手机浏览器打开本仓库这个文件，点「Download」→ 下载完点开安装（需在系统里允许「安装未知应用」）。
+2. **电脑传手机**：USB 数据线拷到手机任意目录，用文件管理器点开安装。
+3. **adb**：`adb install -r "apk/护眼管家-1.0.apk"`。
+
+> 为什么不是 20 MB 以内：人脸检测用的是 ML Kit **离线随包**模型（不依赖 Google 服务，国内手机也能用），模型本身约 20 MB。
+> 首次打开如果提示风险，是因为这个包不来自应用商店——源码全在仓库里，可自行核对或重新编译。
+
+## 从源码构建（Build from source）
+
+需要一个 JDK 17 和 Android SDK（Platform 34 + Build-Tools 34.0.0）。
 
 1. 用 Android Studio（Koala 或更新）打开 `platforms/android`
 2. 等 Gradle 同步完成（首次会下载 CameraX / ML Kit）
@@ -12,10 +29,10 @@
 
 ```bash
 cd platforms/android
-./gradlew assembleDebug     # 产物：app/build/outputs/apk/debug/app-debug.apk
+gradle wrapper --gradle-version 8.7   # 首次生成 wrapper
+./gradlew assembleDebug              # 产物：app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleRelease            # 正式包（需自行配置 signingConfig）
 ```
-
-> 工程里没有放 `gradle/wrapper`，用 Android Studio 打开会自动生成；命令行构建请先执行一次 `gradle wrapper`。
 
 ## 需要的权限（Permissions）
 
