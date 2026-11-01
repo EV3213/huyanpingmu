@@ -279,16 +279,18 @@ class EyeGuard:
         def make_theme_menu():
             items = []
             for zh_name, en_name, hexv in THEME_PRESETS:
-                def set_color(icon=None, item=None, _h=hexv):
-                    self.cfg["theme_color"] = _h
-                    save_config(self.cfg)
-                    logging.info("theme color -> %s", _h)
-                    self._refresh_tray()
+                def make_setter(_h):
+                    def set_color(icon=None, item=None):
+                        self.cfg["theme_color"] = _h
+                        save_config(self.cfg)
+                        logging.info("theme color -> %s", _h)
+                        self._refresh_tray()
+                    return set_color
                 items.append(TrayItem(
                     lambda item, _h=hexv, _z=zh_name, _e=en_name:
                         ("%s %s" % ("●" if self.cfg.get("theme_color") == _h else "○",
                                     _z if self.cfg.get("lang", "zh") == "zh" else _e)),
-                    action=set_color))
+                    action=make_setter(hexv)))
             return items
 
         def custom_color(icon=None, item=None):
