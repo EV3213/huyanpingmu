@@ -235,6 +235,43 @@
   .priv-item p { font-size: 14px; color: rgba(255,255,255,.64); }
   .priv-item .ico { color: #4ADE9B; margin-bottom: 14px; }
 
+  /* ---------- 下载区 ---------- */
+  .dl { display: grid; grid-template-columns: 1.04fr .96fr; gap: 22px; align-items: start; }
+  .dl-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 20px;
+    padding: 26px; display: flex; gap: 24px; align-items: flex-start;
+  }
+  .dl-card--col { flex-direction: column; gap: 12px; }
+  .dl-qr {
+    width: 152px; height: 152px; flex: 0 0 auto;
+    border: 1px solid var(--line); border-radius: 14px; padding: 8px; background: #fff;
+  }
+  .dl-body { flex: 1; min-width: 0; }
+  .dl-body h3, .dl-card--col h3 { font-size: 18px; margin-bottom: 8px; }
+  .dl-body > p, .dl-tip { font-size: 13.5px; color: var(--ink-soft); line-height: 1.62; }
+  .dl-meta {
+    margin: 12px 0 16px; font-size: 12.5px; letter-spacing: .2px; color: var(--ink-soft);
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  }
+  .dl-steps { margin: 20px 0 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 9px; }
+  .dl-steps li { position: relative; padding-left: 27px; font-size: 13.5px; color: var(--ink-soft); counter-increment: s; }
+  .dl-steps li::before {
+    content: counter(s); position: absolute; left: 0; top: 0;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--brand-soft); color: var(--brand);
+    font-size: 11px; font-weight: 700; display: grid; place-items: center;
+  }
+  .dl-col { display: grid; gap: 9px; margin: 4px 0 10px; }
+  .dl-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  }
+  .dl-row .os { font-weight: 700; font-size: 14px; }
+  .dl-row code {
+    font-size: 12px; color: var(--ink-soft); background: #F4F6F5;
+    padding: 4px 8px; border-radius: 7px;
+  }
+
   /* ---------- 下载 / CTA ---------- */
   .cta { text-align: center; padding: 90px 0; }
   .cta h2 { font-size: clamp(26px, 3vw, 36px); }
@@ -255,6 +292,9 @@
     .hero-visual .frame { width: min(280px, 70%); }
     .chip.one { left: 2%; } .chip.two { right: 2%; }
     .steps, .platforms, .priv-grid { grid-template-columns: 1fr; }
+    .dl { grid-template-columns: 1fr; }
+    .dl-card { flex-direction: column; }
+    .dl-qr { width: 176px; height: 176px; align-self: center; }
     .nav-links { display: none; }
     header .wrap { padding: 0 18px; }
     section { padding: 62px 0; }
@@ -277,7 +317,7 @@
     <nav class="nav-links">
       <a href="#how" data-zh="怎么工作" data-en="How it works">怎么工作</a>
       <a href="#theme" data-zh="主题色" data-en="Theme colour">主题色</a>
-      <a href="#platforms" data-zh="下载" data-en="Download">下载</a>
+      <a href="#download" data-zh="下载" data-en="Download">下载</a>
       <a href="#privacy" data-zh="隐私" data-en="Privacy">隐私</a>
     </nav>
     <div class="nav-actions">
@@ -302,18 +342,18 @@
           前置摄像头在本机判断你是否还坐在屏幕前。连续注视超过你设定的时长，一块全屏的实拍绿植就会接管屏幕，配上一句轻声提醒——你才真的会离开屏幕。
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#platforms">
+          <a class="btn btn-primary" href="#download">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-            <span data-zh="选择你的平台" data-en="Choose your platform">选择你的平台</span>
+            <span data-zh="下载安装" data-en="Download">下载安装</span>
           </a>
           <a class="btn btn-line" href="https://github.com/EV3213/huyanpingmu" target="_blank" rel="noopener">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
             <span data-zh="查看源码" data-en="View source">查看源码</span>
           </a>
         </div>
-        <p class="hero-note" data-zh="Windows / macOS / Linux 开箱即用 · Android 可自行编译 · iOS / iPadOS 需 Xcode"
-           data-en="Windows / macOS / Linux ready to run · Android build it yourself · iOS / iPadOS need Xcode">
-          Windows / macOS / Linux 开箱即用 · Android 可自行编译 · iOS / iPadOS 需 Xcode
+        <p class="hero-note" data-zh="Windows / macOS / Linux 开箱即用 · Android 扫码直接安装 · iOS / iPadOS 需 Xcode"
+           data-en="Windows / macOS / Linux ready to run · Android installs straight from a QR code · iOS / iPadOS need Xcode">
+          Windows / macOS / Linux 开箱即用 · Android 扫码直接安装 · iOS / iPadOS 需 Xcode
         </p>
       </div>
 
@@ -422,9 +462,9 @@
         <h2 data-zh="同一套逻辑，在你每块屏幕上" data-en="One idea, on every screen you own">
           同一套逻辑，在你每块屏幕上
         </h2>
-        <p data-zh="桌面三端开箱即用；移动端是原生工程，需要用对应工具链编译。全部源码都在仓库里。"
-           data-en="The three desktop builds run out of the box; mobile are native projects you compile with the matching toolchain. All source is in the repo.">
-          桌面三端开箱即用；移动端是原生工程，需要用对应工具链编译。全部源码都在仓库里。
+        <p data-zh="桌面三端开箱即用；安卓有编译好的签名安装包，扫码即装；iOS / iPadOS 需要用 Xcode 编译。全部源码都在仓库里。"
+           data-en="The three desktop builds run out of the box; Android ships as a signed APK you install directly; iOS / iPadOS are compiled with Xcode. All source is in the repo.">
+          桌面三端开箱即用；安卓有编译好的签名安装包，扫码即装；iOS / iPadOS 需要用 Xcode 编译。全部源码都在仓库里。
         </p>
       </div>
 
@@ -480,13 +520,13 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 9h12v9a2 2 0 0 1-2 2h-1v2h-2v-2h-2v2H9v-2H8a2 2 0 0 1-2-2V9Zm-2.5 0A1.5 1.5 0 0 1 5 10.5v5a1.5 1.5 0 0 1-3 0v-5A1.5 1.5 0 0 1 3.5 9Zm17 0a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-3 0v-5A1.5 1.5 0 0 1 20.5 9ZM7 3h1.5a4.5 4.5 0 0 1 7 0H17v4H7V3Z"/></svg>
             </span>
             <h3>Android</h3>
-            <span class="tag alt" data-zh="需编译" data-en="Build">需编译</span>
+            <span class="tag" data-zh="扫码即装" data-en="Ready">扫码即装</span>
           </div>
-          <p data-zh="Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页。"
-             data-en="Kotlin, CameraX and ML Kit on-device faces, foreground service, boot autostart.">
-            Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页。
+          <p data-zh="Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页。安装包已编译好，扫码直接装。"
+             data-en="Kotlin, CameraX and ML Kit on-device faces, foreground service, boot autostart. Ships as a signed APK — scan and install.">
+            Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页。安装包已编译好，扫码直接装。
           </p>
-          <code>cd platforms/android &amp;&amp; ./gradlew assembleDebug</code>
+          <code><a href="#download" style="color:inherit">到「下载安装」区获取 EyeGuard-1.0.apk</a></code>
         </div>
 
         <div class="platform">
@@ -571,6 +611,61 @@
     </div>
   </section>
 
+  <!-- 下载 -->
+  <section id="download">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker" data-zh="下载安装" data-en="Download">下载安装</div>
+        <h2 data-zh="手机扫一下，装好就能用" data-en="Scan it, tap it, done">手机扫一下，装好就能用</h2>
+        <p data-zh="安卓版是编译好、已签名的正式安装包——不用连电脑、不用装任何开发工具，下载完点开就是一个普通 App。"
+           data-en="The Android build is a signed, ready-to-install package. No computer, no developer tools: download it, tap it, and it installs like any other app.">
+          安卓版是编译好、已签名的正式安装包——不用连电脑、不用装任何开发工具，下载完点开就是一个普通 App。
+        </p>
+      </div>
+
+      <div class="dl">
+        <div class="dl-card">
+          <img class="dl-qr" src="assets/qr-apk.png" alt="APK 下载二维码">
+          <div class="dl-body">
+            <h3>Android · 安装包</h3>
+            <p data-zh="用手机扫左边的码直接下载，也可以点下面的按钮。"
+               data-en="Scan the code on the left with your phone, or tap the button below.">
+              用手机扫左边的码直接下载，也可以点下面的按钮。
+            </p>
+            <div class="dl-meta">EyeGuard-1.0.apk · 41 MB · Android 8.0+ · 已签名</div>
+            <a class="btn btn-primary"
+               href="https://github.com/EV3213/huyanpingmu/releases/latest/download/EyeGuard-1.0.apk"
+               data-zh="下载 APK（41 MB）" data-en="Download APK (41 MB)">下载 APK（41 MB）</a>
+            <ol class="dl-steps">
+              <li data-zh="下载完成后，在通知栏里点这个文件打开" data-en="When the download finishes, tap the file in your notification bar">下载完成后，在通知栏里点这个文件打开</li>
+              <li data-zh="系统问「是否允许安装未知应用」，选允许" data-en="When asked about installing unknown apps, allow it">系统问「是否允许安装未知应用」，选允许</li>
+              <li data-zh="装好后打开，第一次要摄像头权限时选允许" data-en="Open it and allow the camera on first launch">装好后打开，第一次要摄像头权限时选允许</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="dl-card dl-card--col">
+          <h3>Windows / macOS / Linux</h3>
+          <p class="dl-tip" data-zh="桌面三端是脚本式安装，双击一次或输一行命令就装完，之后开机自启、托盘常驻。"
+             data-en="The desktop builds install from a script — one double-click or one command — then autostart and live in the tray.">
+            桌面三端是脚本式安装，双击一次或输一行命令就装完，之后开机自启、托盘常驻。
+          </p>
+          <div class="dl-col">
+            <div class="dl-row"><span class="os">Windows</span><code>安装到本机.bat</code></div>
+            <div class="dl-row"><span class="os">macOS</span><code>sh install.sh</code></div>
+            <div class="dl-row"><span class="os">Linux</span><code>python3 eyeguard.py</code></div>
+          </div>
+          <a class="btn btn-line" href="https://github.com/EV3213/huyanpingmu/tree/main/platforms"
+             target="_blank" rel="noopener" data-zh="到仓库取桌面版" data-en="Get the desktop builds">到仓库取桌面版</a>
+          <p class="dl-tip" data-zh="iPhone / iPad 目前还需要用 Xcode 编译，没有现成安装包。"
+             data-en="iPhone / iPad still need Xcode to build — no ready-made package yet.">
+            iPhone / iPad 目前还需要用 Xcode 编译，没有现成安装包。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- CTA -->
   <div class="cta">
     <div class="wrap">
@@ -580,9 +675,9 @@
         开源、免费、不联网。三分钟装好，之后你什么都不用管。
       </p>
       <div class="row">
-        <a class="btn btn-primary" href="https://github.com/EV3213/huyanpingmu" target="_blank" rel="noopener"
-           data-zh="前往仓库下载" data-en="Get it on GitHub">前往仓库下载</a>
-        <a class="btn btn-soft" href="#platforms" data-zh="查看安装方式" data-en="See install steps">查看安装方式</a>
+        <a class="btn btn-primary" href="https://github.com/EV3213/huyanpingmu/releases/latest/download/EyeGuard-1.0.apk"
+           data-zh="下载安卓安装包" data-en="Download the Android APK">下载安卓安装包</a>
+        <a class="btn btn-soft" href="#download" data-zh="查看安装方式" data-en="See install steps">查看安装方式</a>
       </div>
     </div>
   </div>
