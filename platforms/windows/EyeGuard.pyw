@@ -10,6 +10,8 @@ import re
 import sys
 import json
 import time
+import hashlib
+import secrets
 import logging
 import threading
 import subprocess
@@ -56,6 +58,17 @@ I18N = {
         "smart": "识别全屏场景",
         "study_wait": "学习时最多延后",
         "no_limit": "不限制（等退出）",
+        "pin_set": "设置访问密码…",
+        "pin_change": "修改 / 取消访问密码…",
+        "pin_title": "访问密码",
+        "pin_prompt": "请输入访问密码：",
+        "pin_new": "设置一个新密码（至少 4 位，留空 = 取消密码）：",
+        "pin_repeat": "再输入一次：",
+        "pin_wrong": "密码不对",
+        "pin_too_short": "密码至少 4 位",
+        "pin_mismatch": "两次输入不一致",
+        "pin_saved": "密码已设置。之后改时间、暂停、退出都要先输密码。",
+        "pin_cleared": "密码已取消",
         "minutes": " 分钟",
         "speak_rest": "休息一下，离开屏幕，看看远处，让眼睛放松一下吧",
         "speak_done": "休息完成，欢迎回来",
@@ -73,6 +86,17 @@ I18N = {
         "smart": "Detect fullscreen app",
         "study_wait": "Max delay while studying",
         "no_limit": "No limit (wait for exit)",
+        "pin_set": "Set access password…",
+        "pin_change": "Change / remove password…",
+        "pin_title": "Access password",
+        "pin_prompt": "Enter the access password:",
+        "pin_new": "New password (4+ chars, empty = remove):",
+        "pin_repeat": "Repeat:",
+        "pin_wrong": "Wrong password",
+        "pin_too_short": "At least 4 characters",
+        "pin_mismatch": "The two entries do not match",
+        "pin_saved": "Password saved. Changing interval, pausing and exiting now ask for it.",
+        "pin_cleared": "Password removed",
         "minutes": " min",
         "speak_rest": "Time for a break. Please look away from the screen and relax your eyes.",
         "speak_done": "Break finished. Welcome back.",
@@ -232,6 +256,11 @@ def classify_scene(info, cfg):
     return "normal"
 
 
+def _pin_hash(pin, salt):
+    """密码只存摘要，配置文件里看不到明文"""
+    return hashlib.sha256(("%s|%s" % (salt, pin)).encode("utf-8")).hexdigest()
+
+
 def normalize_theme(value):
     """校验主题色，非法时回退默认"""
     if isinstance(value, str) and len(value) == 7 and value.startswith("#"):
@@ -256,6 +285,7 @@ def load_config():
            "lang": "zh", "theme_color": DEFAULT_THEME,
            "smart_scene": True, "entertainment_min": 25,
            "study_max_wait_min": 30,
+           "admin_salt": "", "admin_pin_sha256": "",
            "study_apps": list(SMART_DEFAULT_STUDY_APPS)}
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -277,6 +307,10 @@ def load_config():
     except (TypeError, ValueError):
         wait = 30
     cfg["study_max_wait_min"] = wait if wait >= 0 else 30
+    if not isinstance(cfg.get("admin_salt"), str):
+        cfg["admin_salt"] = ""
+    if not isinstance(cfg.get("admin_pin_sha256"), str):
+        cfg["admin_pin_sha256"] = ""
     return cfg
 
 
@@ -385,6 +419,7 @@ class EyeGuard:
         self.pending = False           # 到点了但在等学习软件退出
         self.pending_since = 0.0
         self.away_since = 0.0
+        self._unlocked_at = 0.0        # 输对密码后的免密时间窗口
         self.cam = CameraMonitor()
         if self.cfg.get("use_camera", True):
             self.cam.start()
@@ -509,6 +544,99 @@ class EyeGuard:
     def tr(self, key):
         return I18N[self.cfg.get("lang", "zh")][key]
 
+    # ---------- 访问密码 ----------
+    def pin_enabled(self):
+        return bool(self.cfg.get("admin_pin_sha256"))
+
+    def _pin_ok(self, pin):
+        if not self.pin_enabled():
+            return True
+        salt = self.cfg.get("admin_salt") or ""
+        return _pin_hash(pin, salt) == self.cfg.get("admin_pin_sha256")
+
+    def _ask_text(self, prompt, show="*"):
+        """弹一个输入框；取消返回 None"""
+        try:
+            import tkinter as tk
+            from tkinter import simpledialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            value = simpledialog.askstring(self.tr("pin_title"), prompt,
+                                           show=show, parent=root)
+            root.destroy()
+            return value
+        except Exception as e:
+            logging.warning("ask dialog failed: %s", e)
+            return None
+
+    def _notify(self, text):
+        try:
+            import tkinter as tk
+            from tkinter import messagebox
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            messagebox.showinfo(self.tr("tray_title"), text, parent=root)
+            root.destroy()
+        except Exception as e:
+            logging.warning("notify failed: %s", e)
+
+    def require_pin(self, force=False):
+        """需要密码的操作先过这里；没设密码直接放行，输对后 3 分钟内免重复输入"""
+        if not self.pin_enabled():
+            return True
+        now = time.time()
+        if not force and now - self._unlocked_at < 180:
+            return True
+        pin = self._ask_text(self.tr("pin_prompt"))
+        if pin is None:
+            return False
+        if self._pin_ok(pin):
+            self._unlocked_at = now
+            logging.info("access granted by password")
+            return True
+        logging.warning("wrong password entered")
+        self._notify(self.tr("pin_wrong"))
+        return False
+
+    def guard(self, fn):
+        """把需要密码的动作包一层"""
+        def wrapped(icon=None, item=None):
+            if not self.require_pin():
+                return None
+            return fn(icon, item)
+        return wrapped
+
+    def edit_pin(self, icon=None, item=None):
+        if self.pin_enabled() and not self.require_pin(force=True):
+            return
+        first = self._ask_text(self.tr("pin_new"))
+        if first is None:
+            return
+        if first == "":
+            self.cfg["admin_salt"] = ""
+            self.cfg["admin_pin_sha256"] = ""
+            save_config(self.cfg)
+            logging.info("password removed")
+            self._notify(self.tr("pin_cleared"))
+            self._refresh_tray()
+            return
+        if len(first) < 4:
+            self._notify(self.tr("pin_too_short"))
+            return
+        again = self._ask_text(self.tr("pin_repeat"))
+        if again != first:
+            self._notify(self.tr("pin_mismatch"))
+            return
+        salt = secrets.token_hex(8)
+        self.cfg["admin_salt"] = salt
+        self.cfg["admin_pin_sha256"] = _pin_hash(first, salt)
+        save_config(self.cfg)
+        logging.info("password set")
+        self._notify(self.tr("pin_saved"))
+        self._refresh_tray()
+
     def toggle_lang(self, icon=None, item=None):
         self.cfg["lang"] = "en" if self.cfg.get("lang") == "zh" else "zh"
         save_config(self.cfg)
@@ -592,7 +720,7 @@ class EyeGuard:
                     return set_minutes
                 items.append(TrayItem(
                     lambda item, _m=mins: "%d%s" % (_m, self.tr("minutes")),
-                    action=make_setter(mins),
+                    action=self.guard(make_setter(mins)),
                     checked=lambda item, _m=mins, _k=key:
                         int(self.cfg.get(_k, 0)) == _m,
                     radio=True))
@@ -617,7 +745,7 @@ class EyeGuard:
                 items.append(TrayItem(
                     lambda item, _m=mins: self.tr("no_limit") if _m == 0
                     else "%d%s" % (_m, self.tr("minutes")),
-                    action=make_setter(mins),
+                    action=self.guard(make_setter(mins)),
                     checked=lambda item, _m=mins:
                         int(self.cfg.get("study_max_wait_min", 30)) == _m,
                     radio=True))
@@ -625,7 +753,7 @@ class EyeGuard:
 
         menu = TrayMenu(
             TrayItem(lambda item: self.tr("rest_now"), action=lambda i, it: self.start_rest()),
-            TrayItem(lambda item: self.tr("pause"), action=toggle_pause,
+            TrayItem(lambda item: self.tr("pause"), action=self.guard(toggle_pause),
                      checked=lambda item: self.paused),
             TrayMenu.SEPARATOR,
             TrayItem(lambda item: self.tr("interval"),
@@ -634,7 +762,7 @@ class EyeGuard:
             TrayItem(lambda item: self.tr("entertainment"),
                      TrayMenu(*make_interval_menu("entertainment_min",
                                                   [15, 20, 25, 30, 45]).items)),
-            TrayItem(lambda item: self.tr("smart"), action=toggle_smart,
+            TrayItem(lambda item: self.tr("smart"), action=self.guard(toggle_smart),
                      checked=lambda item: bool(self.cfg.get("smart_scene", True))),
             TrayItem(lambda item: self.tr("study_wait"),
                      TrayMenu(*make_wait_menu().items)),
@@ -644,7 +772,10 @@ class EyeGuard:
                      TrayMenu(*make_theme_menu(),
                               TrayItem(lambda item: self.tr("theme_custom"),
                                        action=custom_color))),
-            TrayItem(lambda item: self.tr("exit"), action=lambda i, it: self.quit(i)),
+            TrayItem(lambda item: self.tr("pin_change") if self.pin_enabled()
+                     else self.tr("pin_set"), action=self.edit_pin),
+            TrayItem(lambda item: self.tr("exit"), action=self.guard(
+                lambda i, it: self.quit(i))),
             TrayMenu.SEPARATOR,
             TrayItem(lambda item: "%s v%s" % (self.tr("tray_title"), APP_VERSION),
                      action=None),

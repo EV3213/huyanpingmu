@@ -58,6 +58,7 @@
 
 - 摄像头监测（Webcam monitoring）：本地人脸检测，离开屏幕即暂停计时，回来继续；画面不外传、不保存。
 - 场景识别（Smart scene detection）：识别当前全屏在用什么程序 / 网页，学习类自动把休息推到你退出之后，娱乐视频网页提前 5 分钟提醒。见下节。
+- 访问密码（Parental lock）：设一个密码，改时长、暂停监控、退出程序都要先输对密码，孩子没法自己把提醒关掉。
 - 强制休息屏（Forced break screen）：全屏播放实拍绿植 / 航拍视频，20 秒倒计时，Aerial 屏保风格。
 - 自然语音（Natural voice）：预生成神经网络语音，不是系统机械朗读音；离线播放，无需联网。
 - 主题色自定义（Theme colour）：10 套预设配色 + 自由取色，托盘 / 设置页 / 休息屏全部跟随；桌面端图标颜色也会跟着变。
@@ -85,6 +86,21 @@
 - 浏览器靠标签页标题判断，所以标题里没写站点名的页面会被当成工作网页（用普通时长）。想加自己的站点，改 EyeGuard.pyw 顶部的关键词表，或直接改托盘开关关掉这个功能。
 - 判定不依赖网络，也不读取页面内容，只读窗口标题和进程名。（No network access; only the window title and process name are read.）
 - 目前只有 Windows 端做了场景识别；Linux / macOS 用各自的窗口查询接口（xdotool / AppleScript），Android 需要无障碍服务，iOS 根本无法读取别的 App，这三端暂时只有固定时长。
+
+## 访问密码（Parental lock）
+
+给孩子用的电脑，最怕的就是他自己把时间改长、或者直接把程序退掉。
+
+（Set a password so the interval cannot be changed or the app quit without it.）
+
+- **怎么开（How to set）**：托盘右键 →「设置访问密码…」→ 输两遍，至少 4 位。密码只存「盐 + SHA-256 摘要」，配置文件里看不到明文。
+- **锁住的（Locked）**：普通时长、娱乐时长、识别全屏场景开关、学习时最多延后、暂停监控、退出护眼管家。
+- **不锁的（Not locked）**：立即休息、切换语言、更换主题色——这些改了也不影响护眼效果，留着方便。
+- **免重复（3-minute window）**：输对一次之后 3 分钟内不用再输，避免连着调几个选项被反复弹窗。
+- **改密码 / 取消（Change or remove）**：同一项菜单，进去先输当前密码；新密码留空就是取消密码。
+- **忘了怎么办（Forgot it）**：关掉程序，删掉 config.json 里的 admin_pin_sha256 和 admin_salt 两个字段（或整份 config.json），密码就没了，时长会回到默认值。
+
+说清楚局限（Honest limits）：这挡的是「随手改一下」，不是防破解。孩子如果会编辑 config.json，或者直接用任务管理器结束进程，那是挡不住的——真要防到这一层，得在系统里给这台电脑建一个受限账户。密码本身也不上云、不联网，只在本机算摘要。
 
 ## 主题色（Theme colour）
 
@@ -141,7 +157,7 @@
 
 | 版本（Version） | 主要变化（Highlights） |
 |---|---|
-| 1.1 | 场景识别：学习软件延后休息、娱乐网页 25 分钟、普通软件 30 分钟可调；托盘菜单显示版本号 |
+| 1.1 | 场景识别（学习延后 / 娱乐 25 分钟 / 普通 30 分钟可调）、访问密码锁住改时间与退出、托盘显示版本号 |
 | 1.0 | 首个全平台版本：六端源码、10 套主题色 + 自定义取色、神经语音、官网与商店素材 |
 
 - 最新版下载（Latest）：https://github.com/EV3213/huyanpingmu/releases/latest
@@ -173,6 +189,7 @@
 - 识别全屏场景（Detect fullscreen app）开关
 - 学习时最多延后（Max delay while studying）
 - 语言 / Language（中文 / English）
+- 设置访问密码 / 修改取消密码（Set / change password）
 - 退出护眼管家（Exit）
 
 ## 设置（Configuration）
@@ -188,6 +205,7 @@
 | study_apps | 自定义学习类进程名（extra study processes，数组） | 内置一张表 |
 | break_sec | 休息时长秒数（break length in seconds） | 20 |
 | use_camera | 是否启用摄像头（enable webcam detection） | true |
+| admin_pin_sha256 | 访问密码摘要（不存明文；清空即取消密码） | 空 |
 | lang | 语言（language）：zh / en | zh |
 | theme_color | 主题色（theme colour，#RRGGBB） | #12644A |
 
