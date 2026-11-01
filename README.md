@@ -52,7 +52,7 @@
 
 每端都有独立 README，含安装/构建步骤和平台限制（Each platform ships its own README）.
 
-**Android 手机直接装（Install on Android right away）**：下载 [apk/护眼管家-1.0.apk](platforms/android/apk/护眼管家-1.0.apk)（43 MB，正式签名，v2 签名，最低 Android 8.0），传到手机点开即可安装，不需要 Android Studio、不需要 Google 服务。首次安装需在系统里允许「安装未知应用」。
+**Android 手机直接装（Install on Android right away）**：到 [Releases 页面](https://github.com/EV3213/huyanpingmu/releases/latest) 下载 **EyeGuard-1.0.apk**（41 MB，正式签名 v2，最低 Android 8.0），传到手机点开即可安装，不需要 Android Studio、不需要 Google 服务。首次安装需在系统里允许「安装未知应用」。仓库里也留了一份 [apk/护眼管家-1.0.apk](platforms/android/apk/护眼管家-1.0.apk) 作为备份。
 
 ## 功能（Features）
 
