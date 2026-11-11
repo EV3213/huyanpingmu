@@ -6,11 +6,15 @@ Windows 端成品，双击即用（Ready to run on Windows）。
 
 | 文件（File） | 作用（Purpose） |
 |---|---|
-| EyeGuard.pyw | 主程序（main program，pythonw 静默运行） |
-| install.py | 安装脚本（installer：选语言 + 写开机自启） |
+| EyeGuard.pyw | 主程序（main program，pythonw 静默运行；默认 = 学习端） |
+| parent_ui.ps1 | 家长端设置窗口（parent settings window） |
+| ask.ps1 | 密码 / 输入弹窗（password & prompt dialog） |
 | 安装到本机.bat | 双击安装（double-click installer） |
+| 家长端.bat | 打开家长端（launch parent app） |
+| install.py | 安装脚本（installer：选语言 + 写开机自启） |
 | rest.html | 休息屏（break screen，kiosk 全屏） |
 | config.json | 配置（configuration） |
+| state.json | 学习端上报的今日进度（today stats，学习端运行时生成） |
 | haarcascade_frontalface_default.xml | 人脸模型（face model） |
 | voice_*.mp3 | 预生成语音（neural voice clips） |
 | 使用说明（中文）.txt / README（English）.txt | 详细说明（manuals） |
@@ -21,8 +25,9 @@ Windows 端成品，双击即用（Ready to run on Windows）。
    （Copy the three media files from `../assets/` into this folder.）
 2. 双击「安装到本机.bat」，选 1（中文）或 2（English）。
    （Run the installer bat and choose 1 or 2.）
-3. 之后开机自启；托盘绿色圆点右键可暂停 / 立即休息 / 切语言 / 退出。
-   （Auto-starts at boot; right-click the green tray dot for options.）
+3. 之后开机自启的是**学习端**：托盘绿色圆点右键只有今日进度、立即休息、打开家长端、退出（要密码）。
+   （Auto-starts at boot as the study app; the tray menu is read-only except "take a break" and "open parent app".）
+4. 家长设置（Parent settings）：双击「家长端.bat」，第一次要求设置家长密码，之后在这里改一切。
 
 ## 场景识别（Scene detection）
 
@@ -40,17 +45,16 @@ Windows 端成品，双击即用（Ready to run on Windows）。
 - 想关掉整个功能：托盘菜单里取消勾选「识别全屏场景」，或把 config.json 的 smart_scene 设为 false。
 - 只读窗口标题和进程名，不读页面内容、不联网。
 
-## 访问密码（Parental lock）
+## 家长端与学习端（Parent & study app）
 
-不想让孩子自己把时间改长或把程序退掉，就设一个密码：
+1.2 起 Windows 端分成两个入口，共用一份 config.json：
 
-1. 托盘右键 →「设置访问密码…」→ 输两遍，至少 4 位。
-2. 之后「普通时长 / 娱乐时长 / 识别全屏场景 / 学习时最多延后 / 暂停监控 / 退出」都要先输密码；输对一次 3 分钟内免重复。
-3. 「立即休息 / 语言 / 主题色」不锁，方便日常用。
-4. 改密码或取消：同一项菜单，先输当前密码，新密码留空即取消。
-5. 密码忘了：关掉程序，删掉 config.json 里的 admin_pin_sha256 与 admin_salt（或整份 config.json）。
+- **学习端（study app）**：开机自启的就是它。托盘菜单没有任何可改的项——没有暂停、没有时长，退出要输家长密码。孩子能看到今天专注了多久、休息了几次。
+- **家长端（parent app）**：双击「家长端.bat」（或托盘里的「打开家长端…」），输密码进入设置窗口。学习计划、学习软件清单、主题色、密码都在这里改。
+- 家长点「保存」后，学习端约 1 秒内自动生效，不用重启。
+- 密码忘了：关掉学习端，删掉 config.json 里的 admin_pin_sha256 与 admin_salt（或整份 config.json）。
 
-密码只存盐 + SHA-256 摘要，不联网、不上传。它能挡住随手改设置，但挡不住会编辑配置文件或直接结束进程的人。
+密码只存盐 + SHA-256 摘要，不联网、不上传。它能挡住随手改设置和退出程序，但挡不住会编辑配置文件或直接结束进程的人。
 
 ## 依赖（Requirements）
 

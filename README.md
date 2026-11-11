@@ -58,7 +58,8 @@
 
 - 摄像头监测（Webcam monitoring）：本地人脸检测，离开屏幕即暂停计时，回来继续；画面不外传、不保存。
 - 场景识别（Smart scene detection）：识别当前全屏在用什么程序 / 网页，学习类自动把休息推到你退出之后，娱乐视频网页提前 5 分钟提醒。见下节。
-- 访问密码（Parental lock）：设一个密码，改时长、暂停监控、退出程序都要先输对密码，孩子没法自己把提醒关掉。
+- 家长端与学习端（Parent & study app）：Windows 端一分为二——学习端锁死只管休息，家长端输密码进设置窗口；家长改完保存，学习端约 1 秒自动生效。见「家长端与学习端」一节。
+- 访问密码（Parental lock）：家长端的入口密码；学习端的退出也要输它，孩子没法自己把提醒关掉。
 - 强制休息屏（Forced break screen）：全屏播放实拍绿植 / 航拍视频，20 秒倒计时，Aerial 屏保风格。
 - 自然语音（Natural voice）：预生成神经网络语音，不是系统机械朗读音；离线播放，无需联网。
 - 主题色自定义（Theme colour）：10 套预设配色 + 自由取色，托盘 / 设置页 / 休息屏全部跟随；桌面端图标颜色也会跟着变。
@@ -87,20 +88,38 @@
 - 判定不依赖网络，也不读取页面内容，只读窗口标题和进程名。（No network access; only the window title and process name are read.）
 - 目前只有 Windows 端做了场景识别；Linux / macOS 用各自的窗口查询接口（xdotool / AppleScript），Android 需要无障碍服务，iOS 根本无法读取别的 App，这三端暂时只有固定时长。
 
-## 访问密码（Parental lock）
+## 家长端与学习端（Parent & study app）
 
-给孩子用的电脑，最怕的就是他自己把时间改长、或者直接把程序退掉。
+Windows 端从 1.2 起分成两个入口，共用一份配置（One install, two doors since v1.2）：
 
-（Set a password so the interval cannot be changed or the app quit without it.）
+| | 学习端（Study app，给孩子） | 家长端（Parent app，给家长） |
+|---|---|---|
+| 打开方式 | 开机自启 / 「护眼管家.bat」 | 「家长端.bat」，或托盘菜单里的「打开家长端…」 |
+| 能做什么 | 看今日进度、立即休息 | 改学习计划、学习软件清单、主题色、密码 |
+| 不能做什么 | 改时长、暂停、退出（要密码） | — |
+| 界面 | 托盘菜单（极简） | 独立设置窗口 |
 
-- **怎么开（How to set）**：托盘右键 →「设置访问密码…」→ 输两遍，至少 4 位。密码只存「盐 + SHA-256 摘要」，配置文件里看不到明文。
-- **锁住的（Locked）**：普通时长、娱乐时长、识别全屏场景开关、学习时最多延后、暂停监控、退出护眼管家。
-- **不锁的（Not locked）**：立即休息、切换语言、更换主题色——这些改了也不影响护眼效果，留着方便。
-- **免重复（3-minute window）**：输对一次之后 3 分钟内不用再输，避免连着调几个选项被反复弹窗。
-- **改密码 / 取消（Change or remove）**：同一项菜单，进去先输当前密码；新密码留空就是取消密码。
-- **忘了怎么办（Forgot it）**：关掉程序，删掉 config.json 里的 admin_pin_sha256 和 admin_salt 两个字段（或整份 config.json），密码就没了，时长会回到默认值。
+学习端托盘菜单只有这几项（The study tray menu）：
 
-说清楚局限（Honest limits）：这挡的是「随手改一下」，不是防破解。孩子如果会编辑 config.json，或者直接用任务管理器结束进程，那是挡不住的——真要防到这一层，得在系统里给这台电脑建一个受限账户。密码本身也不上云、不联网，只在本机算摘要。
+- 今日已专注 X 分钟 · 已休息 N 次（只读）
+- 当前：学习中 / 娱乐中 · 每 30 分钟休息（只读）
+- 立即休息（Take a break now）
+- 打开家长端…（Open parent app）
+- 退出（需家长密码）（Exit, parent password）
+
+家长端窗口的内容（The parent window）：
+
+- **学习计划**：每轮专注多久、休息多久、娱乐网页时长、学习中最多延后（0 = 等退出）、场景识别开关、摄像头开关
+- **学习软件**：多行文本框，每行一个进程名或关键词，到点先不打断等退出
+- **今日情况**：专注 X 分钟 · 休息 N 次 · 当前在干嘛（学习端每 10 秒上报一次，窗口每 5 秒刷新）
+- **外观**：主题色取色器
+- **修改家长密码 / 保存**
+
+家长点「保存」后学习端约 1 秒内自动生效，不用重启（Config hot-reload: saves apply within a second）。
+
+密码规则（Password rules）：第一次打开家长端强制设置密码（至少 4 位）；学习端退出时也要输这个密码；密码只存「盐 + SHA-256 摘要」，配置文件里没有明文，也不联网。忘了密码：删掉 config.json 里的 admin_pin_sha256 和 admin_salt 两个字段即可重置。
+
+说清楚局限（Honest limits）：这挡的是「随手改一下」，不是防破解。孩子如果会编辑 config.json，或者直接用任务管理器结束进程，那是挡不住的——真要防到这一层，得在系统里给这台电脑建一个受限账户。另外学习端菜单里没有「暂停」这一项，直接就不给了，而不是锁起来。
 
 ## 主题色（Theme colour）
 
@@ -157,40 +176,38 @@
 
 | 版本（Version） | 主要变化（Highlights） |
 |---|---|
+| 1.2 | 家长端与学习端分离：学习端锁死只管休息，家长端独立设置窗口（密码进入），配置保存后学习端秒级生效；新增今日专注统计 |
 | 1.1 | 场景识别（学习延后 / 娱乐 25 分钟 / 普通 30 分钟可调）、访问密码锁住改时间与退出、托盘显示版本号 |
 | 1.0 | 首个全平台版本：六端源码、10 套主题色 + 自定义取色、神经语音、官网与商店素材 |
 
 - 最新版下载（Latest）：https://github.com/EV3213/huyanpingmu/releases/latest
-- 版本号位置（Where to look）：托盘菜单最下面一行「护眼管家 v1.1」，鼠标悬停托盘图标的提示里也有。
+- 版本号位置（Where to look）：托盘菜单最下面一行「护眼管家 v1.2 · 学习端」，鼠标悬停托盘图标的提示里也有。
 - 仓库更新是自动推送的（Auto-push）：装一次 `python tools/autopush.py install` 之后，每次 git commit 会立刻 push 到 GitHub，推送结果记录在 .git/autopush.log。`status` 查看、`remove` 卸载。
 
 ## 安装（Install）
 
-**Windows 推荐走这一步（Recommended）**：到 [Releases](https://github.com/EV3213/huyanpingmu/releases/latest) 下载 **EyeGuard-1.1-windows.zip**，解压到任意文件夹，双击里面的「安装到本机.bat」。也可以直接用仓库里的 [platforms/windows](platforms/windows) 文件夹，内容完全一样。
+**Windows 推荐走这一步（Recommended）**：到 [Releases](https://github.com/EV3213/huyanpingmu/releases/latest) 下载 **EyeGuard-1.2-windows.zip**，解压到任意文件夹，双击里面的「安装到本机.bat」。也可以直接用仓库里的 [platforms/windows](platforms/windows) 文件夹，内容完全一样。
 
 （Download the zip from Releases, unzip anywhere, run the installer bat inside. The folder in the repo is identical.）
 
 1. 双击「安装到本机.bat」，按提示选择 1（中文）或 2（English）。
    （Double-click the installer bat file and choose 1 for Chinese or 2 for English.）
-2. 安装完成后自动写入开机自启，下次开机自动运行。
-   （Auto-start is registered; it will run from the next boot.）
-3. 想立刻启动（To start now）：双击桌面上的「护眼管家.bat」。
-   （Do NOT double-click EyeGuard.pyw directly — .pyw has no file association on most systems.）
-4. **确认自己装的是哪一版（Check your version）**：托盘图标右键，菜单最下面一行写着「护眼管家 v1.1」；鼠标悬停在托盘图标上，提示里也有版本号。菜单里如果**没有「主题色」这一项**，说明装的是 1.0 之前的旧包，删掉重新下载即可。
+2. 安装完成后自动写入开机自启，下次开机自动运行（学习端）。
+   （Auto-start is registered; the study app runs from the next boot.）
+3. 家长设置（Parent settings）：双击「家长端.bat」，第一次会要求设置家长密码。
+   （Double-click the parent-app bat; it asks you to create the parent password on first run.）
+4. **确认自己装的是哪一版（Check your version）**：托盘图标右键，菜单最下面一行写着「护眼管家 v1.2 · 学习端」；鼠标悬停在托盘图标上，提示里也有版本号。菜单里如果**没有「打开家长端」这一项**，说明装的是 1.1 及更早的旧包，删掉重新下载即可。
 
 ## 使用（Usage）
 
-托盘绿色圆点右键（Right-click the green tray icon）：
+学习端（Study tray，孩子看到的全部）：
 
+- 今日进度、当前场景（只读，两项）
 - 立即休息（Take a break now）
-- 暂停监控（Pause / resume monitoring）
-- 普通时长（Normal interval）
-- 娱乐时长（Entertainment interval）
-- 识别全屏场景（Detect fullscreen app）开关
-- 学习时最多延后（Max delay while studying）
-- 语言 / Language（中文 / English）
-- 设置访问密码 / 修改取消密码（Set / change password）
-- 退出护眼管家（Exit）
+- 打开家长端…（Open parent app）
+- 退出（需家长密码）（Exit, parent password）
+
+家长端（Parent window）：双击「家长端.bat」→ 输密码 → 设置窗口。所有能改的东西都在那里：学习计划、学习软件、今日情况、主题色、密码。
 
 ## 设置（Configuration）
 
@@ -224,10 +241,15 @@
 
 | 文件（File） | 作用（Purpose） |
 |---|---|
-| EyeGuard.pyw | 主程序（main program） |
+| EyeGuard.pyw | 主程序：不带参数启动 = 学习端（main program; default = study app） |
+| parent_ui.ps1 | 家长端设置窗口（parent settings window） |
+| ask.ps1 | 系统弹窗组件：输密码 / 确认（password & prompt dialog） |
+| 家长端.bat | 打开家长端（launch parent app） |
+| 护眼管家.bat | 打开学习端（launch study app） |
 | install.py | 安装脚本（installer） |
 | rest.html | 休息屏（break screen） |
 | config.json | 配置（configuration） |
+| state.json | 学习端写给家长端的今日进度（today stats for the parent window） |
 | make_voice.py | 语音生成脚本（voice generator） |
 | voice_*.mp3 | 预生成语音（pre-generated voice clips） |
 | rest-*.mp4 / rest-bg.png | 休息屏素材（break screen media） |

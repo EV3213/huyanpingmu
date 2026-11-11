@@ -10,6 +10,7 @@ import re
 import sys
 import json
 import time
+import datetime
 import hashlib
 import secrets
 import logging
@@ -18,18 +19,35 @@ import subprocess
 import ctypes
 import urllib.parse
 
+# ---------- 运行模式 ----------
+# study  = 学习端（孩子用）：只能休息、看状态，改不了任何设置，退出要家长密码
+# parent = 家长端：输密码后进设置界面，配置学习计划、学习软件、密码
+MODE = "study"
+for _i, _a in enumerate(sys.argv):
+    if _a == "--mode" and _i + 1 < len(sys.argv):
+        MODE = sys.argv[_i + 1].strip().lower()
+    elif _a.startswith("--mode="):
+        MODE = _a.split("=", 1)[1].strip().lower()
+if MODE not in ("study", "parent"):
+    MODE = "study"
+IS_PARENT = MODE == "parent"
+
 # ---------- 单实例守护 ----------
-MUTEX = ctypes.windll.kernel32.CreateMutexW(None, False, "EyeGuard_SingleInstance")
+_MUTEX_NAME = "EyeGuard_Parent" if IS_PARENT else "EyeGuard_SingleInstance"
+MUTEX = ctypes.windll.kernel32.CreateMutexW(None, False, _MUTEX_NAME)
 if ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
     sys.exit(0)
 
-import cv2
-import pystray
-from PIL import Image, ImageDraw
+if not IS_PARENT:
+    # 家长端只做设置，不需要摄像头和托盘，省掉这些重依赖
+    import cv2
+    import pystray
+    from PIL import Image, ImageDraw
 from pystray import Menu as TrayMenu, MenuItem as TrayItem
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE, "config.json")
+STATE_PATH = os.path.join(BASE, "state.json")
 LOG_PATH = os.path.join(BASE, "eyeguard.log")
 REST_HTML = os.path.join(BASE, "rest.html")
 
@@ -70,6 +88,13 @@ I18N = {
         "pin_saved": "密码已设置。之后改时间、暂停、退出都要先输密码。",
         "pin_cleared": "密码已取消",
         "minutes": " 分钟",
+        "study_status": "今日已专注",
+        "breaks_done": "已休息",
+        "no_pin_warn": "⚠ 家长密码未设置，限制未生效",
+        "open_parent": "打开家长端…",
+        "parent_only": "家长端（设置）",
+        "exit_pin": "退出（需家长密码）",
+        "locked_hint": "学习端已锁定：设置请用家长端",
         "speak_rest": "休息一下，离开屏幕，看看远处，让眼睛放松一下吧",
         "speak_done": "休息完成，欢迎回来",
     },
@@ -98,6 +123,13 @@ I18N = {
         "pin_saved": "Password saved. Changing interval, pausing and exiting now ask for it.",
         "pin_cleared": "Password removed",
         "minutes": " min",
+        "study_status": "Focused today",
+        "breaks_done": "Breaks",
+        "no_pin_warn": "⚠ No parent password set, limits inactive",
+        "open_parent": "Open parent app…",
+        "parent_only": "Parent app (settings)",
+        "exit_pin": "Exit (parent password)",
+        "locked_hint": "Study app is locked: use the parent app to change settings",
         "speak_rest": "Time for a break. Please look away from the screen and relax your eyes.",
         "speak_done": "Break finished. Welcome back.",
     },
@@ -117,7 +149,7 @@ THEME_PRESETS = [
     ("石墨灰", "Graphite", "#3C4744"),
 ]
 DEFAULT_THEME = "#12644A"
-APP_VERSION = "1.1"
+APP_VERSION = "1.2"
 
 # ---------- 前台窗口 / 全屏场景识别 ----------
 # 学习类程序（按进程名匹配，配置里 study_apps 可覆盖）
@@ -280,6 +312,45 @@ def save_config(cfg):
         logging.warning("save config failed: %s", e)
 
 
+def today_str():
+    return datetime.date.today().isoformat()
+
+
+def load_state():
+    """学习端写给家长端看的状态文件（今日专注、休息次数、当前场景）"""
+    st = {"date": today_str(), "watched_today": 0, "breaks": 0,
+          "scene": "normal", "exe": "", "title": "", "pending": False,
+          "updated": 0}
+    try:
+        with open(STATE_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            st.update(data)
+    except Exception:
+        pass
+    if st.get("date") != today_str():
+        # 跨天：今日数据清零
+        st["date"] = today_str()
+        st["watched_today"] = 0
+        st["breaks"] = 0
+    for k in ("watched_today", "breaks"):
+        try:
+            st[k] = max(0, int(st.get(k) or 0))
+        except (TypeError, ValueError):
+            st[k] = 0
+    return st
+
+
+def save_state(st):
+    try:
+        tmp = STATE_PATH + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(st, f, ensure_ascii=False)
+        os.replace(tmp, STATE_PATH)
+    except Exception as e:
+        logging.debug("save state failed: %s", e)
+
+
 def load_config():
     cfg = {"interval_min": 30, "break_sec": 20, "use_camera": True,
            "lang": "zh", "theme_color": DEFAULT_THEME,
@@ -311,6 +382,20 @@ def load_config():
         cfg["admin_salt"] = ""
     if not isinstance(cfg.get("admin_pin_sha256"), str):
         cfg["admin_pin_sha256"] = ""
+    # 家长端可能写进字符串，这里统一成干净的列表
+    apps = cfg.get("study_apps")
+    if isinstance(apps, str):
+        apps = re.split(r"[,;\s，、]+", apps)
+    if not isinstance(apps, list):
+        apps = list(SMART_DEFAULT_STUDY_APPS)
+    cleaned = []
+    for a in apps:
+        a = str(a).strip().lower()
+        if a and a not in cleaned:
+            cleaned.append(a)
+    cfg["study_apps"] = cleaned or list(SMART_DEFAULT_STUDY_APPS)
+    cfg["use_camera"] = bool(cfg.get("use_camera", True))
+    cfg["smart_scene"] = bool(cfg.get("smart_scene", True))
     return cfg
 
 
@@ -420,10 +505,72 @@ class EyeGuard:
         self.pending_since = 0.0
         self.away_since = 0.0
         self._unlocked_at = 0.0        # 输对密码后的免密时间窗口
+        # 今日统计（家长端会读 state.json 展示）
+        st = load_state()
+        self.today = st.get("date") or today_str()
+        self.today_watched = st["watched_today"]
+        self.breaks = st["breaks"]
+        self._last_state_write = 0.0
+        self._cfg_mtime = self._config_mtime()
         self.cam = CameraMonitor()
         if self.cfg.get("use_camera", True):
             self.cam.start()
         self._build_tray()
+        self._write_state()
+
+    # ---------- 配置热加载 / 状态上报 ----------
+    _HOT_KEYS = ("interval_min", "entertainment_min", "break_sec",
+                 "study_max_wait_min", "smart_scene", "use_camera",
+                 "study_apps", "theme_color", "lang",
+                 "admin_salt", "admin_pin_sha256")
+
+    def _config_mtime(self):
+        try:
+            return os.path.getmtime(CONFIG_PATH)
+        except OSError:
+            return 0.0
+
+    def _reload_config(self):
+        """家长端保存配置后自动生效，不用重启学习端"""
+        mt = self._config_mtime()
+        if not mt or mt == self._cfg_mtime:
+            return
+        self._cfg_mtime = mt
+        fresh = load_config()
+        changed = [k for k in self._HOT_KEYS
+                   if k in fresh and fresh[k] != self.cfg.get(k)]
+        if not changed:
+            return
+        for k in changed:
+            self.cfg[k] = fresh[k]
+        self.break_sec = int(self.cfg["break_sec"])
+        self.interval_sec = int(self.cfg["interval_min"]) * 60
+        logging.info("config reloaded: %s", ", ".join(changed))
+        if "use_camera" in changed:
+            if self.cfg["use_camera"] and not self.cam.is_alive():
+                self.cam = CameraMonitor()
+                self.cam.start()
+            elif not self.cfg["use_camera"] and self.cam.is_alive():
+                self.cam.stop()
+        try:
+            self.icon.icon = self._tray_image()
+            self.icon.update_menu()
+        except Exception:
+            pass
+        self._update_tooltip()
+
+    def _write_state(self, force=False):
+        """把今日进度写给家长端看（每 10 秒一次，成本可忽略）"""
+        now = time.time()
+        if not force and now - self._last_state_write < 10:
+            return
+        self._last_state_write = now
+        save_state({"date": self.today, "watched_today": self.today_watched,
+                    "breaks": self.breaks, "scene": self.scene_kind,
+                    "exe": self.scene.get("exe", ""),
+                    "title": (self.scene.get("title") or "")[:120],
+                    "pending": bool(self.pending),
+                    "version": APP_VERSION, "updated": int(now)})
 
     # ---------- 计时线程 ----------
     def required_seconds(self):
@@ -479,6 +626,10 @@ class EyeGuard:
         while True:
             time.sleep(1)
             try:
+                self._reload_config()
+            except Exception as e:
+                logging.debug("config reload failed: %s", e)
+            try:
                 self._refresh_scene()
             except Exception as e:
                 logging.debug("scene refresh failed: %s", e)
@@ -486,9 +637,20 @@ class EyeGuard:
                 self._tick(time.time())
             except Exception as e:
                 logging.warning("tick failed: %s", e)
+            try:
+                self._write_state()
+            except Exception as e:
+                logging.debug("state write failed: %s", e)
 
     def _tick(self, now):
         """每秒一次的心跳：累加注视时长，按场景决定是否进入休息"""
+        d = today_str()
+        if getattr(self, "today", d) != d:   # 跨天清零
+            self.today = d
+            self.today_watched = 0
+            self.breaks = 0
+            self.watched = 0
+            logging.info("new day, counters reset")
         if self.paused or self.rest_active:
             return
         watching = True
@@ -513,6 +675,7 @@ class EyeGuard:
             return
         self.away_since = 0.0
         self.watched += 1
+        self.today_watched = getattr(self, "today_watched", 0) + 1
         # 已经到点、正在学习：等学习软件退出，一退出就立刻播放休息屏
         if self.pending:
             waited = now - self.pending_since
@@ -555,30 +718,39 @@ class EyeGuard:
         return _pin_hash(pin, salt) == self.cfg.get("admin_pin_sha256")
 
     def _ask_text(self, prompt, show="*"):
-        """弹一个输入框；取消返回 None"""
+        """弹输入框。本机 Python 没带 tkinter，借系统自带的 PowerShell 窗口。"""
+        script = os.path.join(BASE, "ask.ps1")
+        if not os.path.exists(script):
+            logging.warning("ask.ps1 missing, cannot prompt")
+            return None
+        out = os.path.join(BASE, ".ask_%d.tmp" % os.getpid())
         try:
-            import tkinter as tk
-            from tkinter import simpledialog
-            root = tk.Tk()
-            root.withdraw()
-            root.attributes("-topmost", True)
-            value = simpledialog.askstring(self.tr("pin_title"), prompt,
-                                           show=show, parent=root)
-            root.destroy()
-            return value
+            if os.path.exists(out):
+                os.remove(out)
+            subprocess.run(
+                ["powershell", "-NoProfile", "-STA", "-ExecutionPolicy", "Bypass",
+                 "-File", script,
+                 "-Prompt", prompt, "-Title", self.tr("pin_title"),
+                 "-OutFile", out, "-Masked", "1" if show else "0"],
+                timeout=180, creationflags=subprocess.CREATE_NO_WINDOW)
+            if not os.path.exists(out):
+                return None                    # 点了取消
+            with open(out, "r", encoding="utf-8") as f:
+                return f.read().split("\x1f")[0]
         except Exception as e:
             logging.warning("ask dialog failed: %s", e)
             return None
+        finally:
+            try:
+                if os.path.exists(out):
+                    os.remove(out)
+            except OSError:
+                pass
 
     def _notify(self, text):
         try:
-            import tkinter as tk
-            from tkinter import messagebox
-            root = tk.Tk()
-            root.withdraw()
-            root.attributes("-topmost", True)
-            messagebox.showinfo(self.tr("tray_title"), text, parent=root)
-            root.destroy()
+            ctypes.windll.user32.MessageBoxW(
+                None, text, self.tr("tray_title"), 0x40)
         except Exception as e:
             logging.warning("notify failed: %s", e)
 
@@ -666,122 +838,63 @@ class EyeGuard:
         except Exception:
             pass
 
+    def open_parent(self, icon=None, item=None):
+        """学习端菜单里直接拉起家长端（家长端自己会验密码）"""
+        if not launch_parent_app():
+            self._notify("打开家长端失败，请用安装目录里的「家长端.bat」手动打开。")
+
+    def _scene_text(self):
+        zh = self.cfg.get("lang", "zh") == "zh"
+        table = ({"study": "学习中", "entertainment": "娱乐中",
+                  "work": "工作中", "normal": "普通"} if zh else
+                 {"study": "studying", "entertainment": "watching",
+                  "work": "working", "normal": "normal"})
+        label = table.get(self.scene_kind, "")
+        if self.pending:
+            label += " · 待休息" if zh else " · break pending"
+        return label
+
+    def _today_text(self):
+        mins = self.today_watched // 60
+        if self.cfg.get("lang", "zh") == "zh":
+            return "今日已专注 %d 分钟 · 已休息 %d 次" % (mins, self.breaks)
+        return "Focused today %d min · %d breaks" % (mins, self.breaks)
+
+    def _next_text(self):
+        mins = self.required_seconds() // 60
+        if self.cfg.get("lang", "zh") == "zh":
+            return "当前：%s · 每 %d 分钟休息" % (self._scene_text(), mins)
+        return "Now: %s · break every %d min" % (self._scene_text(), mins)
+
     def _build_tray(self):
-        def toggle_pause(icon, item):
-            self.paused = not self.paused
-
-        # 主题色子菜单：预设 + 自定义
-        def make_theme_menu():
-            items = []
-            for zh_name, en_name, hexv in THEME_PRESETS:
-                def make_setter(_h):
-                    def set_color(icon=None, item=None):
-                        self.cfg["theme_color"] = _h
-                        save_config(self.cfg)
-                        logging.info("theme color -> %s", _h)
-                        self._refresh_tray()
-                    return set_color
-                items.append(TrayItem(
-                    lambda item, _h=hexv, _z=zh_name, _e=en_name:
-                        ("%s %s" % ("●" if self.cfg.get("theme_color") == _h else "○",
-                                    _z if self.cfg.get("lang", "zh") == "zh" else _e)),
-                    action=make_setter(hexv)))
-            return items
-
-        def custom_color(icon=None, item=None):
-            try:
-                import tkinter as tk
-                from tkinter import colorchooser
-                root = tk.Tk()
-                root.withdraw()
-                _, hexv = colorchooser.askcolor(
-                    color=self.cfg.get("theme_color", DEFAULT_THEME),
-                    title=self.tr("theme"))
-                root.destroy()
-                if hexv:
-                    self.cfg["theme_color"] = normalize_theme(
-                        hexv if hexv.startswith("#") else "#" + hexv)
-                    save_config(self.cfg)
-                    logging.info("theme color -> %s", self.cfg["theme_color"])
-                    self._refresh_tray()
-            except Exception as e:
-                logging.warning("custom color failed: %s", e)
-
-        def make_interval_menu(key, options):
-            items = []
-            for mins in options:
-                def make_setter(_m):
-                    def set_minutes(icon=None, item=None):
-                        self.cfg[key] = _m
-                        save_config(self.cfg)
-                        logging.info("%s -> %s min", key, _m)
-                        self._update_tooltip()
-                        self._refresh_tray()
-                    return set_minutes
-                items.append(TrayItem(
-                    lambda item, _m=mins: "%d%s" % (_m, self.tr("minutes")),
-                    action=self.guard(make_setter(mins)),
-                    checked=lambda item, _m=mins, _k=key:
-                        int(self.cfg.get(_k, 0)) == _m,
-                    radio=True))
-            return TrayMenu(*items)
-
-        def toggle_smart(icon=None, item=None):
-            self.cfg["smart_scene"] = not self.cfg.get("smart_scene", True)
-            save_config(self.cfg)
-            logging.info("smart_scene -> %s", self.cfg["smart_scene"])
-            self._refresh_tray()
-
-        def make_wait_menu():
-            """学习场景下最多延后多久再强制休息；0 = 一直等到学习软件退出"""
-            items = []
-            for mins in (15, 30, 45, 60, 0):
-                def make_setter(_m):
-                    def set_wait(icon=None, item=None):
-                        self.cfg["study_max_wait_min"] = _m
-                        save_config(self.cfg)
-                        logging.info("study_max_wait_min -> %s", _m)
-                    return set_wait
-                items.append(TrayItem(
-                    lambda item, _m=mins: self.tr("no_limit") if _m == 0
-                    else "%d%s" % (_m, self.tr("minutes")),
-                    action=self.guard(make_setter(mins)),
-                    checked=lambda item, _m=mins:
-                        int(self.cfg.get("study_max_wait_min", 30)) == _m,
-                    radio=True))
-            return TrayMenu(*items)
-
-        menu = TrayMenu(
-            TrayItem(lambda item: self.tr("rest_now"), action=lambda i, it: self.start_rest()),
-            TrayItem(lambda item: self.tr("pause"), action=self.guard(toggle_pause),
-                     checked=lambda item: self.paused),
+        """学习端托盘：只有状态、立即休息、开家长端、退出，没有任何可改的项。"""
+        if IS_PARENT:
+            return
+        zh = self.cfg.get("lang", "zh") == "zh"
+        items = [
+            TrayItem(lambda item: self._today_text(), action=None),
+            TrayItem(lambda item: self._next_text(), action=None),
             TrayMenu.SEPARATOR,
-            TrayItem(lambda item: self.tr("interval"),
-                     TrayMenu(*make_interval_menu("interval_min",
-                                                  [15, 20, 25, 30, 45, 60]).items)),
-            TrayItem(lambda item: self.tr("entertainment"),
-                     TrayMenu(*make_interval_menu("entertainment_min",
-                                                  [15, 20, 25, 30, 45]).items)),
-            TrayItem(lambda item: self.tr("smart"), action=self.guard(toggle_smart),
-                     checked=lambda item: bool(self.cfg.get("smart_scene", True))),
-            TrayItem(lambda item: self.tr("study_wait"),
-                     TrayMenu(*make_wait_menu().items)),
+            TrayItem(lambda item: self.tr("rest_now"),
+                     action=lambda i, it: self.start_rest()),
             TrayMenu.SEPARATOR,
-            TrayItem(lambda item: self.tr("language"), action=self.toggle_lang),
-            TrayItem(lambda item: self.tr("theme"),
-                     TrayMenu(*make_theme_menu(),
-                              TrayItem(lambda item: self.tr("theme_custom"),
-                                       action=custom_color))),
-            TrayItem(lambda item: self.tr("pin_change") if self.pin_enabled()
-                     else self.tr("pin_set"), action=self.edit_pin),
-            TrayItem(lambda item: self.tr("exit"), action=self.guard(
-                lambda i, it: self.quit(i))),
+        ]
+        if not self.pin_enabled():
+            items.append(TrayItem(lambda item: self.tr("no_pin_warn"),
+                                  action=self.open_parent))
+            items.append(TrayMenu.SEPARATOR)
+        items += [
+            TrayItem(lambda item: self.tr("open_parent"), action=self.open_parent),
+            TrayItem(lambda item: self.tr("exit_pin") if self.pin_enabled()
+                     else self.tr("exit"),
+                     action=self.guard(lambda i, it: self.quit(i))),
             TrayMenu.SEPARATOR,
-            TrayItem(lambda item: "%s v%s" % (self.tr("tray_title"), APP_VERSION),
-                     action=None),
-        )
+            TrayItem(lambda item: "%s v%s · %s" % (
+                self.tr("tray_title"), APP_VERSION,
+                "学习端" if zh else "study"), action=None),
+        ]
         self.icon = pystray.Icon("EyeGuard", self._tray_image(),
-                                 self.tr("tray_title"), menu)
+                                 self.tr("tray_title"), TrayMenu(*items))
         self.icon.run_detached()
 
     def quit(self, icon=None):
@@ -846,6 +959,11 @@ class EyeGuard:
             logging.info("break finished, timer reset")
             self.watched = 0
             self.rest_active = False
+            self.breaks = getattr(self, "breaks", 0) + 1
+            try:
+                self._write_state(force=True)
+            except Exception:
+                pass
 
         threading.Thread(target=_close_later, daemon=True).start()
 
@@ -853,8 +971,40 @@ class EyeGuard:
         self._timer_loop()
 
 
+PARENT_TITLE = "护眼管家 · 家长端"
+PARENT_SCRIPT = os.path.join(BASE, "parent_ui.ps1")
+
+
+def launch_parent_app(wait=False):
+    """家长端是独立的设置窗口（系统自带 PowerShell 绘制），这里只负责拉起它"""
+    if not os.path.exists(PARENT_SCRIPT):
+        logging.error("parent_ui.ps1 missing at %s", PARENT_SCRIPT)
+        ctypes.windll.user32.MessageBoxW(
+            None, "找不到 parent_ui.ps1，请重新解压完整的安装包。",
+            PARENT_TITLE, 0x10)
+        return False
+    cmd = ["powershell", "-NoProfile", "-STA", "-ExecutionPolicy", "Bypass",
+           "-File", PARENT_SCRIPT]
+    try:
+        if wait:
+            subprocess.run(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+        else:
+            subprocess.Popen(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+        logging.info("parent app launched")
+        return True
+    except Exception as e:
+        logging.error("launch parent failed: %s", e)
+        return False
+
+
+def run_parent_app():
+    launch_parent_app(wait=True)
+
+
 if __name__ == "__main__":
-    if "--selftest" in sys.argv:
+    if IS_PARENT:
+        run_parent_app()
+    elif "--selftest" in sys.argv:
         g = EyeGuard()
         print("config:", g.cfg, flush=True)
         print("opencv:", cv2.__version__, flush=True)
