@@ -60,11 +60,15 @@ class MonitorService : LifecycleService() {
     }
 
     private lateinit var prefs: Prefs
+    private lateinit var sceneDetector: SceneDetector
     private val cameraOk = AtomicBoolean(false)
     private val faceSeen = AtomicBoolean(false)
     private var lastFaceAt = 0L
     private var watched = 0
     private var breaking = false
+    private var pendingBreak = false
+    private var pendingAt = 0L
+    private var lastScene = SceneDetector.NORMAL
     private var timerJob: Job? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private val executor = Executors.newSingleThreadExecutor()
@@ -79,6 +83,7 @@ class MonitorService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
+        sceneDetector = SceneDetector(this)
         createChannel()
         startForegroundCompat()
         startCameraIfPossible()
@@ -210,23 +215,73 @@ class MonitorService : LifecycleService() {
             while (isActive) {
                 delay(1000)
                 if (breaking) continue
-                val intervalSec = max(1, prefs.intervalMin) * 60
-                val watching = if (cameraOk.get()) {
-                    val away = !faceSeen.get() &&
-                            System.currentTimeMillis() - lastFaceAt > 10_000
-                    !away
-                } else true
-                if (watching) {
-                    watched++
-                    if (watched >= intervalSec) {
-                        watched = 0
-                        showBreak()
-                    }
-                } else {
-                    watched = 0
-                }
+                tick()
             }
         }
+    }
+
+    /** 每秒一次的判断，拆出来便于单测和调试 */
+    private fun tick() {
+        val now = System.currentTimeMillis()
+        val watching = if (cameraOk.get()) {
+            val away = !faceSeen.get() && now - lastFaceAt > 10_000
+            !away
+        } else true
+
+        // 场景：学习软件 → 到点先挂起，退出后再播；娱乐内容 → 用更短的阈值
+        var scene = SceneDetector.NORMAL
+        if (prefs.smartScene && sceneDetector.hasPermission()) {
+            sceneDetector.foreground()?.let { pkg ->
+                scene = sceneDetector.classify(pkg)
+                lastScene = scene
+            }
+        }
+
+        if (scene == SceneDetector.STUDY) {
+            if (watching) {
+                watched++
+                if (watched >= intervalSec(SceneDetector.NORMAL)) {
+                    if (!pendingBreak) pendingBreak = true
+                    if (pendingAt == 0L) pendingAt = now
+                }
+            }
+            // 一整节课都不退出时的兜底，避免永远不休息
+            val cap = prefs.studyMaxWaitMin
+            if (pendingBreak && cap > 0 && pendingAt > 0 && now - pendingAt > cap * 60_000L) {
+                pendingBreak = false
+                pendingAt = 0L
+                watched = 0
+                Log.i(TAG, "study cap reached, break anyway")
+                showBreak()
+            }
+            return
+        }
+
+        // 从学习软件切出来了：把之前攒下的休息补上
+        if (pendingBreak) {
+            pendingBreak = false
+            pendingAt = 0L
+            watched = 0
+            Log.i(TAG, "left study app, break now (was $lastScene)")
+            showBreak()
+            return
+        }
+
+        if (!watching) {
+            watched = 0
+            return
+        }
+        watched++
+        if (watched >= intervalSec(scene)) {
+            watched = 0
+            showBreak()
+        }
+    }
+
+    /** 到达阈值所需秒数：娱乐内容用 entertainmentMin，其余用 intervalMin */
+    private fun intervalSec(scene: String): Int = when (scene) {
+        SceneDetector.ENT -> max(5, prefs.entertainmentMin) * 60
+        else -> max(1, prefs.intervalMin) * 60
     }
 
     private fun showBreak() {

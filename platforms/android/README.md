@@ -4,15 +4,17 @@
 
 ## 直接安装（Install the ready-made APK）
 
-仓库里已经放好编译好的正式签名包，不用装 Android Studio：
+编译好的正式签名包放在 Releases 里，不用装 Android Studio：
 
-**apk/护眼管家-1.0.apk**（43 MB，包名 com.eyeguard.app，最低 Android 8.0，v2 签名）
+**[EyeGuard-1.2.apk](https://github.com/EV3213/huyanpingmu/releases/latest/download/EyeGuard-1.2.apk)**（41 MB，包名 com.eyeguard.app，最低 Android 8.0，v2 签名）
 
 装法（任选一种）：
 
-1. **手机直接下载**：在手机浏览器打开本仓库这个文件，点「Download」→ 下载完点开安装（需在系统里允许「安装未知应用」）。
-2. **电脑传手机**：USB 数据线拷到手机任意目录，用文件管理器点开安装。
-3. **adb**：`adb install -r "apk/护眼管家-1.0.apk"`。
+1. **手机直接下载**：手机浏览器打开上面的链接 → 下载完点开安装（需在系统里允许「安装未知应用」）。
+2. **电脑传手机**：下载后 USB 拷到手机任意目录，用文件管理器点开安装。
+3. **adb**：`adb install -r EyeGuard-1.2.apk`。
+
+> 1.2 新增：**家长密码**（改时长 / 换主题 / 停止监控都要密码）、**前台应用场景识别**（学习软件到点不打断、退出后立刻休息；B 站抖音等娱乐内容按 25 分钟算，需在系统设置里授予「使用情况访问」）。
 
 > 为什么不是 20 MB 以内：人脸检测用的是 ML Kit **离线随包**模型（不依赖 Google 服务，国内手机也能用），模型本身约 20 MB。
 > 首次打开如果提示风险，是因为这个包不来自应用商店——源码全在仓库里，可自行核对或重新编译。

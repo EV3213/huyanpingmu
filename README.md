@@ -45,14 +45,14 @@
 | Windows | platforms/windows | Python + Chrome kiosk | 已发布（released） |
 | Linux | platforms/linux | Python + 浏览器 kiosk / Tk | 可直接安装（installable） |
 | macOS | platforms/macos | Python + LaunchAgent | 可直接安装（installable） |
-| Android | platforms/android | Kotlin + CameraX + ML Kit | 需 Android Studio 构建 |
+| Android | platforms/android | Kotlin + CameraX + ML Kit | 已发布 APK（扫码即装） |
 | iOS | platforms/ios | SwiftUI + Vision | 需 Xcode 构建 |
 | iPadOS | platforms/ipados | SwiftUI + Vision（大屏适配） | 需 Xcode 构建 |
 | 共享素材 | platforms/assets | 视频 / 海报图 | — |
 
 每端都有独立 README，含安装/构建步骤和平台限制（Each platform ships its own README）.
 
-**Android 手机直接装（Install on Android right away）**：到 [Releases 页面](https://github.com/EV3213/huyanpingmu/releases/latest) 下载 **EyeGuard-1.0.apk**（41 MB，正式签名 v2，最低 Android 8.0），传到手机点开即可安装，不需要 Android Studio、不需要 Google 服务。首次安装需在系统里允许「安装未知应用」。仓库里也留了一份 [apk/护眼管家-1.0.apk](platforms/android/apk/护眼管家-1.0.apk) 作为备份。
+**Android 手机直接装（Install on Android right away）**：到 [Releases 页面](https://github.com/EV3213/huyanpingmu/releases/latest) 下载 **EyeGuard-1.2.apk**（41 MB，正式签名 v2，最低 Android 8.0），传到手机点开即可安装，不需要 Android Studio、不需要 Google 服务。首次安装需在系统里允许「安装未知应用」。1.2 起手机端也有**家长密码**（改时长、换主题、停止监控都要密码）和**场景识别**（学习中不打断、娱乐 25 分钟，需授予「使用情况访问」）。
 
 ## 功能（Features）
 
@@ -86,7 +86,7 @@
 - 学习途中起身接水不算「退出」：只要 3 分钟内回来，休息屏仍然待播；离开超过 3 分钟则视为已经歇过，重新计时。
 - 浏览器靠标签页标题判断，所以标题里没写站点名的页面会被当成工作网页（用普通时长）。想加自己的站点，改 EyeGuard.pyw 顶部的关键词表，或直接改托盘开关关掉这个功能。
 - 判定不依赖网络，也不读取页面内容，只读窗口标题和进程名。（No network access; only the window title and process name are read.）
-- 目前只有 Windows 端做了场景识别；Linux / macOS 用各自的窗口查询接口（xdotool / AppleScript），Android 需要无障碍服务，iOS 根本无法读取别的 App，这三端暂时只有固定时长。
+- 场景识别：Windows（窗口标题 + 进程名）和 Android（使用情况访问权限，读前台应用）已支持；Linux / macOS 可用各自的窗口查询接口（xdotool / AppleScript）扩展，iOS 无法读取别的 App，只有固定时长。
 
 ## 家长端与学习端（Parent & study app）
 
@@ -176,7 +176,7 @@ Windows 端从 1.2 起分成两个入口，共用一份配置（One install, two
 
 | 版本（Version） | 主要变化（Highlights） |
 |---|---|
-| 1.2 | 家长端与学习端分离：学习端锁死只管休息，家长端独立设置窗口（密码进入），配置保存后学习端秒级生效；新增今日专注统计 |
+| 1.2 | Windows：家长端与学习端分离，学习端锁死只管休息，家长端密码进入、保存后秒级生效，新增今日专注统计。Android 同步升到 1.2：家长密码 + 前台应用场景识别 |
 | 1.1 | 场景识别（学习延后 / 娱乐 25 分钟 / 普通 30 分钟可调）、访问密码锁住改时间与退出、托盘显示版本号 |
 | 1.0 | 首个全平台版本：六端源码、10 套主题色 + 自定义取色、神经语音、官网与商店素材 |
 

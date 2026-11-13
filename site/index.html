@@ -290,6 +290,12 @@
   }
   .dl-note-item b { display: block; color: var(--ink); font-size: 13.5px; margin-bottom: 3px; }
   .dl-note-item a { color: var(--brand); font-weight: 600; }
+  .dl-history {
+    margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-soft);
+  }
+  .dl-history .btn { padding: 10px 16px; border-radius: 11px; font-size: 13.5px; }
 
   /* ---------- 下载 / CTA ---------- */
   .cta { text-align: center; padding: 90px 0; }
@@ -543,11 +549,11 @@
             <h3>Android</h3>
             <span class="tag" data-zh="扫码即装" data-en="Ready">扫码即装</span>
           </div>
-          <p data-zh="Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页。安装包已编译好，扫码直接装。"
-             data-en="Kotlin, CameraX and ML Kit on-device faces, foreground service, boot autostart. Ships as a signed APK — scan and install.">
-            Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页。安装包已编译好，扫码直接装。
+          <p data-zh="Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页；1.2 加家长密码与前台应用识别。安装包已编译好，扫码直接装。"
+             data-en="Kotlin, CameraX and ML Kit on-device faces, foreground service, boot autostart. 1.2 adds a parent PIN and foreground-app detection. Ships as a signed APK — scan and install.">
+            Kotlin + CameraX + ML Kit 离线人脸，前台服务常驻，开机自启，全屏休息页；1.2 加家长密码与前台应用识别。安装包已编译好，扫码直接装。
           </p>
-          <code><a href="#download" style="color:inherit">到「下载安装」区获取 EyeGuard-1.0.apk</a></code>
+          <code><a href="#download" style="color:inherit">到「下载安装」区获取 EyeGuard-1.2.apk</a></code>
         </div>
 
         <div class="platform">
@@ -667,18 +673,18 @@
           <img class="dl-qr" src="assets/qr-apk.png" alt="APK 下载二维码">
           <div class="dl-body">
             <h3>Android · 安装包</h3>
-            <p data-zh="用手机扫左边的码直接下载，也可以点下面的按钮。"
-               data-en="Scan the code on the left with your phone, or tap the button below.">
-              用手机扫左边的码直接下载，也可以点下面的按钮。
+            <p data-zh="用手机扫左边的码直接下载，也可以点下面的按钮。1.2 起手机端也有家长密码和场景识别了。"
+               data-en="Scan the code on the left with your phone, or tap the button below. Since 1.2 the phone build has the parent PIN and scene detection too.">
+              用手机扫左边的码直接下载，也可以点下面的按钮。1.2 起手机端也有家长密码和场景识别了。
             </p>
-            <div class="dl-meta">EyeGuard-1.0.apk · 41 MB · Android 8.0+ · 已签名</div>
+            <div class="dl-meta">EyeGuard-1.2.apk · 41 MB · Android 8.0+ · 已签名</div>
             <a class="btn btn-primary"
-               href="https://github.com/EV3213/huyanpingmu/releases/latest/download/EyeGuard-1.0.apk"
+               href="https://github.com/EV3213/huyanpingmu/releases/latest/download/EyeGuard-1.2.apk"
                data-zh="下载 APK（41 MB）" data-en="Download APK (41 MB)">下载 APK（41 MB）</a>
             <ol class="dl-steps">
               <li data-zh="下载完成后，在通知栏里点这个文件打开" data-en="When the download finishes, tap the file in your notification bar">下载完成后，在通知栏里点这个文件打开</li>
               <li data-zh="系统问「是否允许安装未知应用」，选允许" data-en="When asked about installing unknown apps, allow it">系统问「是否允许安装未知应用」，选允许</li>
-              <li data-zh="装好后打开，第一次要摄像头权限时选允许" data-en="Open it and allow the camera on first launch">装好后打开，第一次要摄像头权限时选允许</li>
+              <li data-zh="装好后打开，摄像头权限选允许；想用场景识别再授一次「使用情况访问」" data-en="Allow the camera on first launch; grant usage access if you want scene detection">装好后打开，摄像头权限选允许；想用场景识别再授一次「使用情况访问」</li>
             </ol>
           </div>
         </div>
@@ -702,6 +708,16 @@
           <a href="https://github.com/EV3213/huyanpingmu/tree/main/platforms" target="_blank" rel="noopener">platforms/</a>
         </div>
       </div>
+
+      <div class="dl-history">
+        <span data-zh="新版本用不惯，或者设备上跑不顺？" data-en="Prefer an earlier build, or hitting issues on your device?">
+          新版本用不惯，或者设备上跑不顺？
+        </span>
+        <a class="btn btn-line" href="https://github.com/EV3213/huyanpingmu/releases" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          <span data-zh="下载历史版本（1.1 / 1.0）" data-en="All versions (1.1 / 1.0)">下载历史版本（1.1 / 1.0）</span>
+        </a>
+      </div>
     </div>
   </section>
 
@@ -716,7 +732,7 @@
       <div class="row">
         <a class="btn btn-primary" href="https://github.com/EV3213/huyanpingmu/releases/latest/download/EyeGuard-1.2-windows.zip"
            data-zh="下载 Windows 版" data-en="Download for Windows">下载 Windows 版</a>
-        <a class="btn btn-soft" href="https://github.com/EV3213/huyanpingmu/releases/latest/download/EyeGuard-1.0.apk"
+        <a class="btn btn-soft" href="https://github.com/EV3213/huyanpingmu/releases/latest/download/EyeGuard-1.2.apk"
            data-zh="下载安卓安装包" data-en="Download the Android APK">下载安卓安装包</a>
         <a class="btn btn-line" href="#download" data-zh="查看安装方式" data-en="See install steps">查看安装方式</a>
       </div>

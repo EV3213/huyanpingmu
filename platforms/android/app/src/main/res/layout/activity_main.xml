@@ -69,6 +69,27 @@
             android:textColor="#1B2B24"
             android:textSize="16sp" />
 
+        <Switch
+            android:id="@+id/sceneSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:checked="true"
+            android:text="识别前台应用（学习不打断 · 娱乐 25 分钟）"
+            android:textColor="#1B2B24"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/usageButton"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#EEF6F2"
+            android:text="授予「使用情况访问」权限"
+            android:textColor="#12644A"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/statusText"
             android:layout_width="wrap_content"
@@ -118,10 +139,29 @@
             android:textColor="#12644A"
             android:textSize="15sp" />
 
+        <Button
+            android:id="@+id/pinButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="#EEF6F2"
+            android:text="设置家长密码"
+            android:textColor="#12644A"
+            android:textSize="15sp" />
+
         <TextView
+            android:id="@+id/versionText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
+            android:text="v1.2"
+            android:textColor="#8AA398"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
             android:text="摄像头画面只在本机处理，不联网、不保存、不上传。"
             android:textColor="#8AA398"
             android:textSize="12sp" />
